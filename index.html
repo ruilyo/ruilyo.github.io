@@ -1,0 +1,2807 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>역학실험</title>
+<style>
+  :root{
+    --bg:#0a0e14;--panel:#10151f;--panel-2:#131a26;--border:#1e2836;--text:#e7edf5;--text-dim:#7c8ba1;
+    --accent:#4fd1ff;--accent-dim:#1b6f8c;--accel:#34d399;--danger:#ff5a5f;--mono:'SFMono-Regular',Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI','Malgun Gothic',sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:var(--sans);}
+  header{padding:18px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+  header h1{margin:0;font-family:var(--mono);font-size:24px;letter-spacing:1px;font-weight:700;}
+  .header-btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+  .header-btn{border-radius:7px;padding:8px 14px;font-family:var(--mono);font-size:12px;cursor:pointer;}
+  #clearAllBtn{background:rgba(250,204,21,0.08);border:1px solid #d4a72c;color:#facc15;}
+  #presetBtn{background:rgba(79,209,255,0.08);border:1px solid var(--accent-dim);color:var(--accent);}
+  #fullResetBtn{background:rgba(255,90,95,0.15);border:1px solid var(--danger);color:var(--danger);width:32px;height:32px;padding:0;font-weight:700;display:inline-flex;align-items:center;justify-content:center;}
+  #fullResetBtn:hover{background:var(--danger);color:#0a0e14;}
+  .layout{display:grid;grid-template-columns:320px 1fr;gap:18px;padding:18px;align-items:start;}
+  .panel-block{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px;}
+  .panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;}
+  .panel-header h2{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin:0;font-family:var(--mono);}
+  .panel-header .hdr-btns{display:flex;gap:6px;}
+  .collapse-btn,.order-btn{background:none;border:1px solid var(--border);color:var(--text-dim);border-radius:5px;font-size:11px;padding:3px 8px;cursor:pointer;font-family:var(--mono);}
+  .left-panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px;position:sticky;top:18px;}
+  .control-bar{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
+  .row-title{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);font-family:var(--mono);margin-bottom:2px;}
+  #startPauseBtn.running{background:rgba(255,90,95,0.18);border-color:var(--danger);color:var(--danger);}
+  .settings-head{display:flex;align-items:center;justify-content:space-between;margin:4px 0 10px;padding-top:12px;border-top:1px dashed var(--border);}
+  .settings-head h2{font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin:0;font-family:var(--mono);}
+  #objectsPanel{display:flex;flex-direction:column;gap:12px;max-height:56vh;overflow-y:auto;padding-right:4px;}
+  .obj-card{border:1px solid var(--border);background:var(--panel-2);border-radius:8px;padding:12px;}
+  .obj-card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  .obj-collapse-btn{background:none;border:none;color:var(--text-dim);font-size:12px;line-height:1;padding:2px 4px;cursor:pointer;}
+  .obj-collapse-btn:hover{color:var(--text);}
+  .obj-card-body{overflow:hidden;}
+  .obj-tag{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-weight:700;font-size:13px;}
+  .obj-swatch{width:12px;height:12px;border-radius:3px;}
+  .obj-del{background:none;border:1px solid var(--border);color:var(--text-dim);border-radius:5px;font-size:11px;padding:3px 7px;cursor:pointer;}
+  .obj-del:disabled{opacity:0.3;cursor:not-allowed;}
+  .field-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;gap:8px;}
+  .xy-row{display:flex;align-items:center;gap:6px;margin-bottom:7px;}
+  .xy-row .xy-label{font-size:11px;color:var(--text-dim);font-family:var(--mono);white-space:nowrap;}
+  .xy-row .xy-box{display:flex;align-items:center;gap:4px;background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:3px 6px;flex:1;}
+  .xy-row .xy-box span{font-size:10.5px;color:var(--accent);font-family:var(--mono);font-weight:700;}
+  .xy-row .xy-box input{width:100%;background:none;border:none;color:var(--text);font-family:var(--mono);font-size:12.5px;text-align:right;padding:2px 0;}
+  .xy-row .xy-box input:focus{outline:none;}
+  .field-row label{font-size:12px;color:var(--text-dim);white-space:nowrap;font-family:var(--mono);}
+  .field-row input[type=number]{width:84px;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:5px 7px;font-family:var(--mono);font-size:13px;text-align:right;}
+  .field-row select{background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:5px 7px;font-family:var(--mono);font-size:12px;}
+  .field-row .unit{font-size:11px;color:var(--text-dim);width:34px;}
+  .duration-badge{background:var(--panel-2);border:1px solid var(--border);color:var(--text-dim);border-radius:6px;padding:5px 12px;font-family:var(--mono);font-size:12px;cursor:pointer;}
+  .duration-badge:hover{color:var(--text);border-color:var(--accent-dim);}
+  .field-hint{font-size:9.5px;color:var(--text-dim);font-family:var(--mono);margin:-4px 0 7px;text-align:right;}
+  .readonly-row{display:flex;justify-content:space-between;gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 8px;margin-bottom:7px;font-family:var(--mono);font-size:11.5px;color:var(--text-dim);}
+  .readonly-row b{color:var(--text);}
+  .btn{width:100%;background:var(--panel-2);border:1px solid var(--border);color:var(--text);padding:10px;border-radius:7px;font-size:13px;font-family:var(--mono);cursor:pointer;}
+  .btn.primary{background:linear-gradient(180deg,rgba(79,209,255,0.18),rgba(79,209,255,0.06));border-color:var(--accent-dim);color:var(--accent);font-weight:700;}
+  .btn.add{color:var(--accent);margin-top:10px;}
+  .btn:disabled{opacity:0.4;cursor:not-allowed;}
+  .right-panel{display:flex;flex-direction:column;gap:16px;min-width:0;}
+  .sim-wrap{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:4px;}
+  .sim-wrap:fullscreen{background:var(--bg);padding:12px;display:flex;flex-direction:column;}
+  .sim-wrap:fullscreen #simCanvas{height:80vh;flex:1;}
+  .sim-wrap:fullscreen .env-controls,.sim-wrap:fullscreen .env-hint{display:none !important;}
+  .sim-header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;padding:8px 12px 4px;gap:10px;}
+  .sim-header h2{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin:0;font-family:var(--mono);}
+  .sim-clock{font-family:var(--mono);font-size:12px;color:var(--accent);display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .mini-ctrl{background:var(--panel-2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 9px;font-family:var(--mono);font-size:11px;cursor:pointer;}
+  .mini-ctrl.running{background:rgba(255,90,95,0.18);border-color:var(--danger);color:var(--danger);}
+  #lockBtn.locked{background:rgba(255,90,95,0.18);border-color:var(--danger);color:var(--danger);}
+  .env-controls{display:flex;flex-wrap:wrap;gap:10px 16px;padding:6px 12px 10px;align-items:center;border-bottom:1px dashed var(--border);}
+  .env-controls.locked, #settingsBody.locked, header .locked{opacity:0.5;pointer-events:none;}
+  .env-item{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11.5px;color:var(--text-dim);}
+  .env-item input[type=number]{width:54px;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:5px 7px;font-family:var(--mono);font-size:12.5px;text-align:right;}
+  .env-item select{background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:5px 7px;font-family:var(--mono);font-size:12.5px;}
+  .env-item input[type=checkbox]{accent-color:var(--accel);}
+  .env-btn{background:var(--panel-2);border:1px solid var(--border);color:var(--text-dim);border-radius:6px;padding:6px 10px;font-family:var(--mono);font-size:11.5px;cursor:pointer;}
+  .env-btn.active{border-color:var(--accel);color:var(--accel);background:rgba(52,211,153,0.08);}
+  .env-hint{font-family:var(--mono);font-size:11px;color:var(--accel);padding:0 12px 8px;}
+  #simCanvas{display:block;width:100%;height:46vh;min-height:360px;border-radius:8px;background:var(--bg);touch-action:none;cursor:grab;}
+  #infoTable{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px;}
+  #infoTable th,#infoTable td{text-align:center;padding:7px 4px;border-bottom:1px solid #17202c;}
+  #infoTable th{color:var(--text-dim);font-weight:500;font-size:10px;}
+  #infoTable td.obj-name{text-align:left;font-weight:700;}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:middle;}
+  .motion-status{margin-top:14px;display:flex;flex-direction:column;gap:8px;}
+  .motion-row{display:flex;align-items:center;gap:10px;background:var(--panel-2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-family:var(--mono);font-size:12px;flex-wrap:wrap;}
+  .motion-row .arrow{font-size:14px;width:26px;text-align:center;}
+  .motion-row .desc{color:var(--text);font-weight:700;}
+  .motion-row .vals{color:var(--text-dim);margin-left:auto;}
+  .coll-empty{font-family:var(--mono);font-size:12.5px;color:var(--text-dim);background:var(--panel-2);border:1px dashed var(--border);border-radius:8px;padding:16px;text-align:center;}
+  .coll-title{font-family:var(--mono);font-size:13px;color:var(--accent);margin-bottom:10px;}
+  .coll-table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px;}
+  .coll-table th,.coll-table td{padding:7px 8px;text-align:center;border-bottom:1px solid #17202c;}
+  .coll-table th{color:var(--text-dim);font-weight:500;font-size:10.5px;}
+  .coll-table td.rowlabel{text-align:left;color:var(--text-dim);}
+  .coll-err{margin-top:10px;text-align:center;font-family:var(--mono);font-size:13px;color:var(--accent);}
+  #collisionLog{margin-top:10px;max-height:100px;overflow-y:auto;font-family:var(--mono);font-size:11px;color:var(--text-dim);}
+  .graphs-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .graph-box{background:var(--panel-2);border:1px solid var(--border);border-radius:8px;padding:10px;}
+  .graph-box canvas{width:100%;height:190px;display:block;background:var(--bg);border-radius:8px;cursor:crosshair;}
+  .graph-box-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:6px;}
+  .graph-box-head h3{font-size:11px;color:var(--text-dim);font-family:var(--mono);margin:0;font-weight:500;}
+  .graph-box-controls{display:flex;gap:6px;align-items:center;}
+  .graph-box-controls input{width:44px;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:3px 5px;font-family:var(--mono);font-size:10.5px;text-align:right;}
+  .del-graph-btn,.zoom-graph-btn{background:none;border:1px solid var(--border);color:var(--text-dim);border-radius:5px;font-size:10px;padding:2px 6px;cursor:pointer;font-family:var(--mono);}
+  .legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;font-family:var(--mono);font-size:11px;color:var(--text-dim);}
+  .legend span{display:inline-flex;align-items:center;gap:5px;cursor:pointer;user-select:none;}
+  .legend span.off{opacity:0.35;text-decoration:line-through;}
+  .lookup-row{display:flex;gap:6px;align-items:center;margin-top:8px;font-family:var(--mono);font-size:11px;color:var(--text-dim);flex-wrap:wrap;}
+  .lookup-row input{width:70px;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:4px 6px;font-family:var(--mono);font-size:11px;}
+  .lookup-row button{background:var(--panel-2);border:1px solid var(--border);color:var(--text-dim);border-radius:5px;padding:4px 8px;font-size:10.5px;cursor:pointer;}
+  .lookup-result{font-family:var(--mono);font-size:11px;color:var(--accent);margin-top:6px;}
+  .add-graph-form{background:var(--panel-2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:14px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
+  .add-graph-form select,.add-graph-form input{background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:6px 8px;font-family:var(--mono);font-size:12px;}
+  .hidden{display:none !important;}
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:100;}
+  .modal-box{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:20px;width:min(480px,90vw);max-height:80vh;overflow-y:auto;}
+  .modal-box.wide{width:min(900px,92vw);}
+  .modal-box h2{margin:0 0 14px;font-family:var(--mono);font-size:15px;color:var(--accent);}
+  .modal-close{float:right;background:none;border:1px solid var(--border);color:var(--text-dim);border-radius:6px;padding:4px 9px;cursor:pointer;font-family:var(--mono);}
+  #graphZoomCanvas{width:100%;height:56vh;background:var(--bg);border-radius:8px;cursor:crosshair;}
+  .preset-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 0;border-bottom:1px dashed var(--border);font-family:var(--mono);font-size:12.5px;}
+  .preset-row .pname{font-weight:700;flex:1;}
+  .preset-row button{background:var(--panel-2);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:5px 9px;font-size:11px;cursor:pointer;}
+  .preset-row button.load{color:var(--accent);border-color:var(--accent-dim);}
+  .preset-row button.del{color:var(--danger);border-color:var(--danger);}
+  .save-row{display:flex;gap:8px;margin-top:14px;}
+  .save-row input{flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:8px;font-family:var(--mono);font-size:12.5px;}
+  .save-row button{background:linear-gradient(180deg,rgba(79,209,255,0.18),rgba(79,209,255,0.06));border:1px solid var(--accent-dim);color:var(--accent);border-radius:6px;padding:8px 12px;font-family:var(--mono);font-size:12px;cursor:pointer;}
+  #helpBtn{position:fixed;left:16px;bottom:16px;width:36px;height:36px;border-radius:8px;background:var(--panel);border:1px solid var(--border);color:var(--accent);font-family:var(--mono);font-weight:700;font-size:16px;cursor:pointer;z-index:90;}
+  .help-list{font-family:var(--mono);font-size:12.5px;line-height:1.85;color:var(--text);}
+  .help-list b{color:var(--accent);}
+  .help-list .tag{display:inline-block;background:rgba(79,209,255,0.12);color:var(--accent);border-radius:4px;padding:0 5px;font-size:10px;margin-right:6px;}
+  @media (max-width:900px){.layout{grid-template-columns:1fr;}.left-panel{position:static;}.graphs-row{grid-template-columns:1fr;}}
+
+  /* ============================== */
+  /* GAS MOLECULAR SIMULATION (독립 모듈 스타일) */
+  /* 기존 스타일 규칙을 재사용/변경하지 않고 gas- 접두사만 사용 */
+  /* ============================== */
+  #gas-mode-overlay{position:fixed;inset:0;z-index:99999;background:var(--bg);display:none;flex-direction:column;font-family:var(--sans);}
+  #gas-mode-header{padding:16px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+  #gas-mode-header h1{margin:0;font-family:var(--mono);font-size:20px;letter-spacing:1px;color:var(--accel);}
+  #gas-mode-body{flex:1;display:grid;grid-template-columns:1fr 300px;gap:16px;padding:16px 24px;min-height:0;}
+  #gasCanvasWrap{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px;display:flex;align-items:center;justify-content:center;min-height:0;}
+  #gasCanvas{background:var(--bg);border-radius:6px;max-width:100%;max-height:100%;}
+  #gas-mode-panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px;overflow-y:auto;font-family:var(--mono);}
+  #gas-mode-panel h2{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin:0 0 10px;}
+  .gas-field{margin-bottom:14px;}
+  .gas-field label{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--text-dim);margin-bottom:5px;}
+  .gas-field input[type=range]{width:100%;accent-color:var(--accel);}
+  .gas-num{width:76px;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:4px 6px;font-family:var(--mono);font-size:12px;text-align:right;}
+  .gas-checkbox-field label{cursor:pointer;}
+  .gas-checkbox-field input[type=checkbox]{accent-color:var(--danger);width:16px;height:16px;cursor:pointer;}
+  .gas-stats{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;padding-top:10px;border-top:1px dashed var(--border);}
+  .gas-stat-row{display:flex;justify-content:space-between;font-size:11.5px;color:var(--text-dim);}
+  .gas-stat-row b{color:var(--text);font-weight:700;}
+  .gas-btn-row{display:flex;gap:8px;margin-top:6px;}
+  .gas-btn{flex:1;background:var(--panel-2);border:1px solid var(--border);color:var(--text);padding:9px;border-radius:7px;font-size:12px;font-family:var(--mono);cursor:pointer;}
+  .gas-btn.primary{border-color:var(--accel);color:var(--accel);}
+  .gas-btn.danger{border-color:var(--danger);color:var(--danger);background:rgba(255,90,95,0.15);}
+  .gas-btn.active{border-color:var(--danger);color:var(--danger);background:rgba(255,90,95,0.12);}
+  @media (max-width:900px){#gas-mode-body{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<header>
+  <h1>역학실험</h1>
+  <div class="header-btns">
+    <button class="header-btn" id="presetBtn">세팅 관리</button>
+    <button class="header-btn" id="clearAllBtn">모든 요소 삭제</button>
+    <button class="header-btn" id="fullResetBtn" title="사이트 전체 초기화(저장 세팅 포함 삭제)" style="text-align:center;">X</button>
+  </div>
+</header>
+<div class="layout">
+  <div class="left-panel">
+    <div class="control-bar">
+      <div class="row-title">시뮬레이션 제어</div>
+      <button class="btn primary" id="startPauseBtn">▶ 운동 시작</button>
+      <button class="btn" id="resetBtn">↺ 초기화 (시작 직전으로)</button>
+      <div class="field-row" style="margin-top:8px;"><label>실행 시간 제한(s)</label><input type="number" id="timeLimitInput" step="1" min="0" placeholder="무제한" style="width:84px;"></div>
+    </div>
+    <div class="settings-head"><h2>물체 설정</h2><button class="collapse-btn" id="toggleSettings">숨기기 ▲</button></div>
+    <div id="settingsBody">
+      <div id="objectsPanel"></div>
+      <button class="btn add" id="addObjBtn">+ 물체 추가</button>
+    </div>
+  </div>
+  <div class="right-panel">
+    <div class="sim-wrap" id="simWrap">
+      <div class="sim-header">
+        <h2>운동 시뮬레이션 (드래그 이동 / 꾹 눌러 좌표입력 / 더블클릭 삭제)</h2>
+        <div class="sim-clock">
+          t = <span id="simClock">0.00</span> s
+          <button class="mini-ctrl" id="miniStartPause">▶</button>
+          <button class="mini-ctrl" id="miniReset">↺</button>
+          <button class="mini-ctrl" id="lockBtn" title="편집 잠금/해제">🔓</button>
+          <button class="env-btn" id="fullscreenBtn">전체화면</button>
+        </div>
+      </div>
+      <div class="env-controls" id="envControls1">
+        <div class="env-item">전체 마찰계수 μ<input type="number" id="frictionInput" value="0" step="0.05" min="0"></div>
+        <div class="env-item">바닥 충돌 유형
+          <select id="groundCollisionTypeSelect"><option value="0" selected>완전비탄성충돌</option><option value="custom">비탄성충돌(반발계수)</option><option value="1">완전탄성충돌</option></select>
+        </div>
+        <div class="env-item" id="groundRestitutionWrap" style="display:none;">반발계수 e<input type="number" id="groundRestitutionInput" value="0.6" step="0.05" min="0" max="1"></div>
+        <div class="env-item">중력가속도<select id="gravitySelect"><option value="9.8" selected>9.8 m/s²</option><option value="10">10 m/s²</option><option value="custom">직접입력</option></select><input type="number" id="gravityNumInput" value="9.8" step="0.1" style="width:64px;display:none;"></div>
+        <div class="env-item">배속<select id="speedSelect"><option value="0.25">0.25x</option><option value="0.5">0.5x</option><option value="1" selected>1x</option><option value="1.5">1.5x</option><option value="2">2x</option><option value="4">4x</option><option value="custom">직접입력</option></select><input type="number" id="speedNumInput" value="1" step="0.05" min="0.25" max="4" style="width:60px;display:none;"></div>
+        <div class="env-item">충돌 유형 (물체끼리)
+          <select id="collisionTypeSelect"><option value="1" selected>완전탄성충돌</option><option value="custom">비탄성충돌(반발계수)</option><option value="0">완전비탄성충돌</option></select>
+        </div>
+        <div class="env-item" id="restitutionWrap" style="display:none;">반발계수 e<input type="number" id="restitutionInput" value="0.6" step="0.05" min="0" max="1"></div>
+        <label class="env-item"><input type="checkbox" id="objCollisionOffChk"> 물체 충돌 끄기</label>
+      </div>
+      <div class="env-controls" id="envControls2">
+        <div class="env-item">가로 칸 수<input type="number" id="mapCellsXInput" value="40" step="1" min="6"></div>
+        <div class="env-item">가로간격(m)<input type="number" id="gridSpacingInput" value="1" step="0.5" min="0.5"></div>
+        <div class="env-item">높이간격(m)<input type="number" id="vGridSpacingInput" value="1" step="0.5" min="0.5"></div>
+        <div class="env-item">가로축 시작점(m)<input type="number" id="originXInput" value="0" step="1"></div>
+      </div>
+      <div class="env-controls" id="envControls3">
+        <label class="env-item"><input type="checkbox" id="showVelChk" checked> 속도 벡터 표시(파랑)</label>
+        <label class="env-item"><input type="checkbox" id="showNormalChk"> 수직항력 벡터 표시(주황)</label>
+        <label class="env-item"><input type="checkbox" id="showLabelsChk" checked> 벡터 수치 표시</label>
+      </div>
+      <div class="env-controls" id="envControls4">
+        <div class="env-item">구조물 종류
+          <select id="structTypeSelect"><option value="ramp">빗면</option><option value="hline">가로</option><option value="vline">세로</option></select>
+        </div>
+        <span id="structRampFields" style="display:inline-flex;flex-wrap:wrap;gap:10px;align-items:center;">
+          <span class="env-item">치수기준<select id="structDimBasisSelect"><option value="height">높이</option><option value="base">밑변</option><option value="hyp">빗변</option></select></span>
+          <span class="env-item">길이(m)<input type="number" id="structHeightInput" value="4" step="0.5" min="0.5"></span>
+          <span class="env-item">각도(°,1~89)<input type="number" id="structAngleInput" value="30" step="1" min="1" max="89"></span>
+          <label class="env-item"><input type="checkbox" id="structFlipChk"> 좌우반전</label>
+        </span>
+        <span id="structLineFields" class="hidden" style="display:inline-flex;flex-wrap:wrap;gap:10px;align-items:center;"><span class="env-item">길이(m)<input type="number" id="structLenInput" value="6" step="0.5" min="0.5"></span></span>
+        <div class="env-item">구조물 충돌 유형
+          <select id="structCollisionTypeSelect"><option value="1" selected>완전탄성충돌</option><option value="custom">비탄성충돌(반발계수)</option><option value="0">완전비탄성충돌</option></select>
+        </div>
+        <div class="env-item" id="structRestitutionWrap" style="display:none;">반발계수 e<input type="number" id="structRestitutionInput" value="0.6" step="0.05" min="0" max="1"></div>
+        <button class="env-btn" id="structModeBtn">구조물 추가</button>
+        <button class="env-btn" id="structClearBtn">구조물 모두 지우기</button>
+        <button class="env-btn" id="zoneModeBtn">마찰구간 설정</button>
+        <button class="env-btn" id="zoneClearBtn">마찰구간 모두 지우기</button>
+      </div>
+      <div class="env-hint hidden" id="structHint">클릭한 지점(정수 좌표로 스냅)이 기준점이 됩니다. 경사면은 직각 모서리, 발판/벽은 클릭 지점 그대로. 모두 공중에 띄울 수 있습니다.</div>
+      <div class="env-hint hidden" id="zoneHint">바닥/발판/경사면 위 시작점을 클릭한 뒤, 구간 길이(m)와 마찰계수를 입력하세요. 이미 만든 구간은 꾹 눌러서 드래그로만 옮길 수 있습니다.</div>
+      <canvas id="simCanvas"></canvas>
+    </div>
+    <div class="panel-block" id="panelGraphs" data-order="1">
+      <div class="panel-header">
+        <h2>그래프</h2>
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+          <div class="env-item">새 그래프 X간격<input type="number" id="graphXStepInput" step="1" min="0" value="1"></div>
+          <div class="env-item">새 그래프 Y간격<input type="number" id="graphYStepInput" step="0.1" min="0" value="1"></div>
+          <div class="hdr-btns"><button class="order-btn" data-move="up">▲</button><button class="order-btn" data-move="down">▼</button><button class="collapse-btn" data-toggle>숨기기 ▲</button></div>
+        </div>
+      </div>
+      <div class="panel-body">
+        <button class="env-btn" id="addGraphBtn" style="margin-bottom:12px;">+ 그래프 추가</button>
+        <div class="add-graph-form hidden" id="addGraphForm">
+          <span style="font-family:var(--mono);font-size:11.5px;color:var(--text-dim);">X축</span><select id="newGraphX"></select>
+          <span style="font-family:var(--mono);font-size:11.5px;color:var(--text-dim);">Y축</span><select id="newGraphY"></select>
+          <input type="text" id="newGraphName" placeholder="그래프 이름">
+          <button class="env-btn" id="newGraphCreate">만들기</button>
+          <button class="env-btn" id="newGraphCancel">취소</button>
+        </div>
+        <div class="graphs-row" id="graphsGrid"></div>
+      </div>
+    </div>
+    <div class="panel-block" id="panelInfo" data-order="2">
+      <div class="panel-header"><h2>물체들의 실시간 물리량</h2><div class="hdr-btns"><button class="order-btn" data-move="up">▲</button><button class="order-btn" data-move="down">▼</button><button class="collapse-btn" data-toggle>숨기기 ▲</button></div></div>
+      <div class="panel-body">
+        <table id="infoTable"><thead><tr><th>물체</th><th>질량 m (kg)</th><th>힘 |F| (N)</th><th>방향 θ (°)</th><th>가속도 크기 |a| (m/s²)</th><th>속력 |v| (m/s)</th><th>위치 x (m)</th><th>위치 y (m)</th></tr></thead><tbody id="infoTableBody"></tbody></table>
+        <div class="motion-status" id="motionStatus"></div>
+      </div>
+    </div>
+    <div class="panel-block" id="panelCollision" data-order="3">
+      <div class="panel-header"><h2>충돌 정보</h2><div class="hdr-btns"><button class="order-btn" data-move="up">▲</button><button class="order-btn" data-move="down">▼</button><button class="collapse-btn" data-toggle>숨기기 ▲</button></div></div>
+      <div class="panel-body">
+        <div id="collisionEmpty" class="coll-empty">아직 충돌이 발생하지 않았습니다.</div>
+        <div id="collisionDetail" class="hidden">
+          <div class="coll-title" id="collisionNote">최근 충돌</div>
+          <table class="coll-table"><thead><tr><th></th><th>충돌 전</th><th>충돌 후</th></tr></thead><tbody>
+            <tr><td class="rowlabel">x방향 총운동량 (Px)</td><td id="pxBefore">-</td><td id="pxAfter">-</td></tr>
+            <tr><td class="rowlabel">y방향 총운동량 (Py)</td><td id="pyBefore">-</td><td id="pyAfter">-</td></tr>
+            <tr><td class="rowlabel">총운동량 (P)</td><td id="pMagBefore">-</td><td id="pMagAfter">-</td></tr>
+          </tbody></table>
+          <div class="coll-err">운동량 보존 오차: <b id="pError">-</b> &nbsp;|&nbsp; 총 충돌 횟수: <b id="collCount">0</b></div>
+        </div>
+        <div id="collisionLog"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<button id="helpBtn" title="도움말">?</button>
+<div class="modal-overlay hidden" id="presetModal">
+  <div class="modal-box">
+    <button class="modal-close" id="presetModalClose">닫기</button>
+    <h2>세팅 관리</h2>
+    <div id="presetList"></div>
+    <div class="save-row"><input type="text" id="presetNameInput" placeholder="새 세팅 이름"><button id="presetSaveBtn">현재 설정 저장</button></div>
+    <div style="font-family:var(--mono);font-size:10.5px;color:var(--text-dim);margin-top:8px;">브라우저(localStorage)에 저장됩니다. "X" 버튼(사이트 전체 초기화)을 누르면 여기 저장된 세팅도 함께 삭제됩니다.</div>
+  </div>
+</div>
+<div class="modal-overlay hidden" id="graphZoomModal">
+  <div class="modal-box wide">
+    <button class="modal-close" id="graphZoomClose">닫기</button>
+    <h2 id="graphZoomTitle">그래프</h2>
+    <canvas id="graphZoomCanvas"></canvas>
+    <div class="lookup-row" id="zoomLookupRow"></div>
+  </div>
+</div>
+<div class="modal-overlay hidden" id="helpModal">
+  <div class="modal-box">
+    <button class="modal-close" id="helpModalClose">닫기</button>
+    <h2>사용법 안내</h2>
+    <div class="help-list" id="helpListContent"></div>
+  </div>
+</div>
+
+<!-- ============================== -->
+<!-- GAS MOLECULAR SIMULATION (독립 오버레이 화면, 기존 DOM과 분리) -->
+<!-- ============================== -->
+<div id="gas-mode-overlay">
+  <div id="gas-mode-header">
+    <h1>기체 분자 운동</h1>
+  </div>
+  <div id="gas-mode-body">
+    <div id="gasCanvasWrap">
+      <canvas id="gasCanvas" width="800" height="560"></canvas>
+    </div>
+    <div id="gas-mode-panel">
+      <h2>제어</h2>
+      <div class="gas-field">
+        <label>입자 수 <input type="number" class="gas-num" id="gasCountNum" min="1" max="3000" step="1" value="80"></label>
+        <input type="range" id="gasCountSlider" min="1" max="3000" step="1" value="80">
+      </div>
+      <div class="gas-field">
+        <label>온도 (K) <input type="number" class="gas-num" id="gasTempNum" min="0" max="6000" step="10" value="300"></label>
+        <input type="range" id="gasTempSlider" min="0" max="6000" step="10" value="300">
+      </div>
+      <div class="gas-field">
+        <label>용기 너비 <input type="number" class="gas-num" id="gasWidthNum" min="80" max="2400" step="10" value="700"></label>
+        <input type="range" id="gasWidthSlider" min="80" max="2400" step="10" value="700">
+      </div>
+      <div class="gas-field">
+        <label>용기 높이 <input type="number" class="gas-num" id="gasHeightNum" min="80" max="1800" step="10" value="460"></label>
+        <input type="range" id="gasHeightSlider" min="80" max="1800" step="10" value="460">
+      </div>
+      <div class="gas-btn-row">
+        <button class="gas-btn danger" id="gasPauseBtn">일시정지</button>
+        <button class="gas-btn" id="gasResetBtn">초기화</button>
+      </div>
+      <div class="gas-field gas-checkbox-field">
+        <label><span>대표 입자 설정</span><input type="checkbox" id="gasRepModeChk"></label>
+      </div>
+      <div class="gas-field gas-checkbox-field hidden" id="gasTrailField">
+        <label><span>대표입자 경로표시</span><input type="checkbox" id="gasTrailChk"></label>
+      </div>
+      <div class="gas-stats" id="gasStatsPanel">
+        <h2 style="margin-top:10px;">측정값</h2>
+        <div class="gas-stat-row"><span>입자 수</span><b id="gasStatCount">-</b></div>
+        <div class="gas-stat-row"><span>온도</span><b id="gasStatTemp">-</b></div>
+        <div class="gas-stat-row"><span>용기 크기</span><b id="gasStatSize">-</b></div>
+        <div class="gas-stat-row"><span>평균 속력</span><b id="gasStatSpeed">-</b></div>
+        <div class="gas-stat-row"><span>평균 운동에너지</span><b id="gasStatAvgKE">-</b></div>
+        <div class="gas-stat-row"><span>총 운동에너지</span><b id="gasStatTotalKE">-</b></div>
+        <div class="gas-stat-row"><span>압력</span><b id="gasStatPressure">-</b></div>
+        <div class="gas-stat-row"><span>벽 충돌 횟수</span><b id="gasStatWallHits">-</b></div>
+        <div class="gas-stat-row"><span>경과 시간</span><b id="gasStatTime">-</b></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  const GRAPH_WINDOW=16, OBJ_SIZE_M=1.0;
+  const PALETTE=['#4fd1ff','#a78bfa','#fb923c','#34d399','#f472b6','#facc15','#60a5fa','#f87171','#2dd4bf','#c084fc'];
+  const AXIS_LABELS={ t:'시간 t (s)', x:'위치 x (m)', y:'위치 y (m)', vx:'속도 vx (m/s)', vy:'속도 vy (m/s)', vMag:'속력 |v| (m/s)',
+    ax:'가속도 ax (m/s2)', ay:'가속도 ay (m/s2)', aMag:'가속도 크기 |a| (m/s2)', Fx:'가한 힘 Fx (N)', Fy:'가한 힘 Fy (N)',
+    Fnetx:'알짜힘 Fnetx (N)', Fnety:'알짜힘 Fnety (N)', FnetMag:'알짜힘 크기 |Fnet| (N)', px:'운동량 px (kg m/s)', py:'운동량 py (kg m/s)',
+    N:'수직항력 N (N)', f:'마찰력 f (N)', K:'운동에너지 K (J)', Ug:'위치에너지 Ug (J)', E:'역학적에너지 E (J)', Jx:'충격량 Jx (kg m/s)', J:'충격량 크기 J (kg m/s)' };
+  const STRUCT_LINE_COLOR='#e7edf5', STRUCT_LINE_WIDTH=3;
+  const DEFAULT_OBJ={ m:5, F:0, theta:0, vx:0, vy:0 };
+
+  let GRAVITY=9.8, originX=0, gridSpacing=1, vGridSpacing=1, mapCellsX=40, mapCellsY=18;
+  let objects=[], history={}, objCounter=0;
+  let running=false, simTime=0, lastTs=null;
+  let collisionLog=[], collisionCount=0;
+  let friction=0, simSpeed=1, timeLimitSec=0;
+  let groundCollisionType='0', groundRestitutionOwn=0.6, newStructCollisionType='1', newStructRestitutionOwn=0.6, objCollisionOff=false;
+  let structures=[], structIdCounter=0;
+  let frictionZones=[], zoneIdCounter=0;
+  let editLocked=false;
+  let interactionMode='drag', zonePending=null;
+  let draggingObj=null, draggingStruct=null, draggingZone=null, structDragOffsetX=0, structDragOffsetY=0;
+  let pendingTarget=null, pendingStartScreen=null, longPressTimer=null;
+  let lastGeom=null, graphs=[], graphIdCounter=0, offscreenSince={};
+  let showLabels=true, showVelVec=true, showNormalVec=false;
+  let zoomedGraphId=null, preRunSnapshot=null;
+
+  function viewRangeX(){ return mapCellsX*gridSpacing; }
+  function viewRangeY(){ return mapCellsY*vGridSpacing; }
+
+  const objectsPanel=document.getElementById('objectsPanel');
+  const addObjBtn=document.getElementById('addObjBtn');
+  const startPauseBtn=document.getElementById('startPauseBtn');
+  const resetBtn=document.getElementById('resetBtn');
+  const timeLimitInput=document.getElementById('timeLimitInput');
+  const miniStartPause=document.getElementById('miniStartPause');
+  const miniReset=document.getElementById('miniReset');
+  const lockBtn=document.getElementById('lockBtn');
+  const fullResetBtn=document.getElementById('fullResetBtn');
+  const clearAllBtn=document.getElementById('clearAllBtn');
+  const simWrap=document.getElementById('simWrap');
+  const simCanvas=document.getElementById('simCanvas');
+  const simCtx=simCanvas.getContext('2d');
+  const simClock=document.getElementById('simClock');
+  const fullscreenBtn=document.getElementById('fullscreenBtn');
+  const envControlGroups=[document.getElementById('envControls1'), document.getElementById('envControls2'), document.getElementById('envControls3'), document.getElementById('envControls4')];
+  const infoTableBody=document.getElementById('infoTableBody');
+  const motionStatus=document.getElementById('motionStatus');
+  const collisionEmpty=document.getElementById('collisionEmpty');
+  const collisionDetail=document.getElementById('collisionDetail');
+  const collCountEl=document.getElementById('collCount');
+  const pxBeforeEl=document.getElementById('pxBefore'), pxAfterEl=document.getElementById('pxAfter');
+  const pyBeforeEl=document.getElementById('pyBefore'), pyAfterEl=document.getElementById('pyAfter');
+  const pMagBeforeEl=document.getElementById('pMagBefore'), pMagAfterEl=document.getElementById('pMagAfter');
+  const pErrorEl=document.getElementById('pError');
+  const collisionNote=document.getElementById('collisionNote');
+  const collisionLogEl=document.getElementById('collisionLog');
+  const frictionInput=document.getElementById('frictionInput');
+  const gravitySelect=document.getElementById('gravitySelect');
+  const gravityNumInput=document.getElementById('gravityNumInput');
+  const speedSelect=document.getElementById('speedSelect');
+  const speedNumInput=document.getElementById('speedNumInput');
+  const collisionTypeSelect=document.getElementById('collisionTypeSelect');
+  const restitutionWrap=document.getElementById('restitutionWrap');
+  const restitutionInput=document.getElementById('restitutionInput');
+  const groundCollisionTypeSelect=document.getElementById('groundCollisionTypeSelect');
+  const groundRestitutionWrap=document.getElementById('groundRestitutionWrap');
+  const groundRestitutionInput=document.getElementById('groundRestitutionInput');
+  const structCollisionTypeSelect=document.getElementById('structCollisionTypeSelect');
+  const structRestitutionWrap=document.getElementById('structRestitutionWrap');
+  const structRestitutionInput=document.getElementById('structRestitutionInput');
+  const objCollisionOffChk=document.getElementById('objCollisionOffChk');
+  const mapCellsXInput=document.getElementById('mapCellsXInput');
+  const gridSpacingInput=document.getElementById('gridSpacingInput');
+  const vGridSpacingInput=document.getElementById('vGridSpacingInput');
+  const originXInput=document.getElementById('originXInput');
+  const showVelChk=document.getElementById('showVelChk');
+  const showNormalChk=document.getElementById('showNormalChk');
+  const showLabelsChk=document.getElementById('showLabelsChk');
+  const structTypeSelect=document.getElementById('structTypeSelect');
+  const structRampFields=document.getElementById('structRampFields');
+  const structLineFields=document.getElementById('structLineFields');
+  const structDimBasisSelect=document.getElementById('structDimBasisSelect');
+  const structHeightInput=document.getElementById('structHeightInput');
+  const structAngleInput=document.getElementById('structAngleInput');
+  const structFlipChk=document.getElementById('structFlipChk');
+  const structLenInput=document.getElementById('structLenInput');
+  const structModeBtn=document.getElementById('structModeBtn');
+  const structClearBtn=document.getElementById('structClearBtn');
+  const zoneModeBtn=document.getElementById('zoneModeBtn');
+  const zoneClearBtn=document.getElementById('zoneClearBtn');
+  const structHint=document.getElementById('structHint');
+  const zoneHint=document.getElementById('zoneHint');
+  const graphXStepInput=document.getElementById('graphXStepInput');
+  const graphYStepInput=document.getElementById('graphYStepInput');
+  const graphsGrid=document.getElementById('graphsGrid');
+  const addGraphBtn=document.getElementById('addGraphBtn');
+  const addGraphForm=document.getElementById('addGraphForm');
+  const newGraphX=document.getElementById('newGraphX');
+  const newGraphY=document.getElementById('newGraphY');
+  const newGraphName=document.getElementById('newGraphName');
+  const newGraphCreate=document.getElementById('newGraphCreate');
+  const newGraphCancel=document.getElementById('newGraphCancel');
+  const toggleSettings=document.getElementById('toggleSettings');
+  const settingsBody=document.getElementById('settingsBody');
+  const presetBtn=document.getElementById('presetBtn');
+  const presetModal=document.getElementById('presetModal');
+  const presetModalClose=document.getElementById('presetModalClose');
+  const presetList=document.getElementById('presetList');
+  const presetNameInput=document.getElementById('presetNameInput');
+  const presetSaveBtn=document.getElementById('presetSaveBtn');
+  const helpBtn=document.getElementById('helpBtn');
+  const helpModal=document.getElementById('helpModal');
+  const helpModalClose=document.getElementById('helpModalClose');
+  const helpListContent=document.getElementById('helpListContent');
+  const graphZoomModal=document.getElementById('graphZoomModal');
+  const graphZoomClose=document.getElementById('graphZoomClose');
+  const graphZoomCanvas=document.getElementById('graphZoomCanvas');
+  const graphZoomCtx=graphZoomCanvas.getContext('2d');
+  const graphZoomTitle=document.getElementById('graphZoomTitle');
+  const zoomLookupRow=document.getElementById('zoomLookupRow');
+
+  toggleSettings.addEventListener('click', ()=>{
+    const c=settingsBody.classList.toggle('hidden');
+    toggleSettings.textContent=c?'펼치기 ▼':'숨기기 ▲';
+  });
+  ['panelInfo','panelCollision','panelGraphs'].map(id=>document.getElementById(id)).forEach(panel=>{
+    const body=panel.querySelector('.panel-body');
+    const tb=panel.querySelector('[data-toggle]');
+    tb.addEventListener('click', ()=>{ const c=body.classList.toggle('hidden'); tb.textContent=c?'펼치기 ▼':'숨기기 ▲'; });
+    panel.querySelectorAll('[data-move]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const dir=btn.dataset.move, parent=panel.parentElement;
+        if(dir==='up' && panel.previousElementSibling) parent.insertBefore(panel, panel.previousElementSibling);
+        if(dir==='down' && panel.nextElementSibling) parent.insertBefore(panel.nextElementSibling, panel);
+      });
+    });
+  });
+
+  helpListContent.innerHTML =
+    '<div style="color:var(--danger);border:1px solid var(--danger);border-radius:6px;padding:8px 10px;margin-bottom:10px;">⚠ 수치가 정확하지 않을 수 있어요. 참고용, 재미로 즐겨주세요!</div>'+
+    '<div><span class="tag">힘/속도</span>물체 카드에서 "힘"과 "속도"는 각각 크기·방향과 x,y 성분 두 방식으로 설정할 수 있고 서로 자동으로 맞춰집니다. 방향은 +x축 기준 반시계 방향 0~360도이며, x성분이 양수면 오른쪽·음수면 왼쪽입니다.</div>'+
+    '<div><span class="tag">물리엔진</span>물체가 면에 붙어 미끄러질 때는 실제 힘(중력·마찰·수직항력)으로 계산하고, 면에 부딪히는 순간에만 반발계수로 튕겨냅니다. 완전탄성+마찰0이면 역학적 에너지가 거의 정확히 보존됩니다.</div>'+
+    '<div><span class="tag">충돌 유형</span>"물체끼리" 설정은 물체와 물체 사이에만 적용됩니다. 바닥과 구조물(빗면/가로/세로)은 각각 따로 충돌 유형을 가지며, 구조물은 만들 때 정한 값을 나중에 꾹 눌러서 다시 바꿀 수 있습니다. "물체 충돌 끄기"를 켜면 물체끼리는 그냥 통과합니다.</div>'+
+    '<div><span class="tag">물체/구조물</span>드래그(정수 스냅) 또는 꾹 눌러 좌표 입력(자유값), 더블클릭으로 삭제합니다. 빗면·가로 근처에 두면 자동으로 붙고 기울어집니다.</div>'+
+    '<div><span class="tag">마찰구간</span>만든 구조물 위에 클릭해서 구간을 만들며, 드래그해도 그 구조물 범위를 벗어나지 않습니다.</div>'+
+    '<div><span class="tag">화면 크기</span>조절 가능한 건 가로 칸 수와 간격, 시작점입니다(세로로 보이는 범위는 가로 설정에 맞춰 자동으로 정해집니다). 물체는 화면 밖으로도 자유롭게 나갈 수 있습니다.</div>'+
+    '<div><span class="tag">잠금</span>자물쇠 아이콘을 켜면 물체·구조물·중력·마찰 등 모든 설정을 바꿀 수 없습니다.</div>'+
+    '<div><span class="tag">배속</span>0.25~4배 사이로 조절할 수 있고, 배속이 높아도 물리 계산은 그만큼 더 잘게 쪼개 처리되어 구조물을 뚫고 지나가지 않습니다.</div>'+
+    '<div><span class="tag">그래프</span>맨 위 패널에서 시간/위치/속도/가속도/힘/알짜힘/운동량/수직항력/마찰력/에너지/충격량을 조합해 만들 수 있습니다. 확대보기에서는 마우스로 좌표를 바로 확인할 수 있고, X값 또는 Y값을 입력해 서로 대응하는 값을 찾을 수 있습니다.</div>'+
+    '<div><span class="tag">초기화</span>"초기화"는 운동 시작 직전 상태로, "모든 요소 삭제"는 물체·구조물·마찰구간만, 우측 상단 "X" 버튼은 저장된 세팅까지 전부 삭제합니다.</div>';
+
+  // A force with a finite duration acts only while simTime, measured from
+  // when the object's run began, is within that duration — the small
+  // epsilon (~1.5 physics steps) is what lets "0초" mean "a single
+  // instant at the very start" rather than "never", since a force applied
+  // for literally zero simulated time would otherwise impart no impulse
+  // at all. simTime pauses whenever the sim is paused, so this naturally
+  // pauses/resumes with the run rather than counting wall-clock time.
+  const FORCE_DURATION_EPS = (1/240)*1.5;
+  function forceComponents(obj){
+    const r=obj.theta*Math.PI/180;
+    let F=obj.F;
+    const dur=obj.forceDuration;
+    if(dur!==undefined && isFinite(dur)){
+      const elapsed=simTime-(obj.forceStartTime||0);
+      if(elapsed>dur+FORCE_DURATION_EPS) F=0;
+    }
+    return { Fx:F*Math.cos(r), Fy:F*Math.sin(r) };
+  }
+  function bottomY(obj){ return obj.y-OBJ_SIZE_M/2; }
+  function round2(n){ return Math.round(n*100)/100; }
+  function signed(n){ return (n>0?'+':'')+n.toFixed(2); }
+  function surfaceNormal(angle){ let nx=-Math.sin(angle), ny=Math.cos(angle); if(ny<0){nx=-nx;ny=-ny;} return {nx,ny}; }
+
+  // Static geometric query: "what surface sits directly under x, and what is
+  // its finite domain" — used only for initial placement / drag-drop
+  // snapping. Continuous sliding contact tracks its own surface directly via
+  // obj.onSurface once established (see the physics engine below), so this
+  // function is never consulted mid-slide.
+  function getSupportSurface(x){
+    let best={y:0,angle:0,kind:'ground',structureId:null,refX:0,refY:0,domainMin:-1e6,domainMax:1e6};
+    structures.forEach(s=>{
+      if(s.type==='ramp'){
+        const xmin=Math.min(s.x1,s.x2), xmax=Math.max(s.x1,s.x2);
+        if(x>=xmin && x<=xmax){
+          const t=(x-s.x1)/(s.x2-s.x1||1e-6), y=s.yBase+t*s.height;
+          if(y>best.y) best={y,angle:s.angle,kind:'structure',structureId:s.id,refX:s.x1,refY:s.yBase,domainMin:xmin,domainMax:xmax};
+        }
+      } else if(s.type==='hline'){
+        const xmin=Math.min(s.x,s.x+s.length), xmax=Math.max(s.x,s.x+s.length);
+        if(x>=xmin && x<=xmax && s.y>best.y) best={y:s.y,angle:0,kind:'structure',structureId:s.id,refX:s.x,refY:s.y,domainMin:xmin,domainMax:xmax};
+      }
+    });
+    return best;
+  }
+  // The exact raw height of ONE SPECIFIC, already-known surface at x — used
+  // (instead of de-offsetting the object's own current y) whenever a seam
+  // check needs "what does MY OWN surface's line say here", so that check
+  // is always computed fresh from geometry and can never inherit even a
+  // tiny drift the object's actual position may have accumulated.
+  function getStructureRawY(kind, structureId, x){
+    if(kind==='ground') return 0;
+    const s=structures.find(s2=>s2.id===structureId);
+    if(!s) return 0;
+    if(s.type==='ramp'){ const t=(x-s.x1)/(s.x2-s.x1||1e-6); return s.yBase+t*s.height; }
+    if(s.type==='hline') return s.y;
+    return 0;
+  }
+  function getFrictionAt(x,kind,structureId){
+    for(let i=frictionZones.length-1;i>=0;i--){
+      const z=frictionZones[i];
+      if(z.kind===kind && (kind!=='structure'||z.structureId===structureId) && x>=z.x1 && x<=z.x2) return z.mu;
+    }
+    return null;
+  }
+  function getZoneMu(kind,structureId,x){ const m=getFrictionAt(x,kind,structureId); return m!==null?m:friction; }
+
+  // Placement/drag snapping: if the object is within a small tolerance of a
+  // surface, place it exactly on that surface with zero normal velocity —
+  // this is the only place a "contact" is created without going through a
+  // real physics collision, because it represents the user directly stating
+  // "put it here, resting."
+  function snapToNearestSurface(obj){
+    const surface=getSupportSurface(obj.x);
+    const n=surfaceNormal(surface.angle);
+    const perp=(obj.x-surface.refX)*n.nx+(obj.y-surface.refY)*n.ny;
+    const gap=perp-OBJ_SIZE_M/2;
+    const vn=obj.vx*n.nx+obj.vy*n.ny;
+    // Only settle into contact if genuinely close AND not already moving
+    // away from the surface — an object given an initial velocity pointing
+    // off the surface (e.g. straight up with no applied force) must launch,
+    // not have that velocity silently discarded by being marked "resting."
+    if(Math.abs(gap)<0.15 && vn<=1e-6){
+      obj.x-=gap*n.nx; obj.y-=gap*n.ny;
+      if(vn<0){ obj.vx-=vn*n.nx; obj.vy-=vn*n.ny; }
+      obj.onSurface={nx:n.nx,ny:n.ny,angle:surface.angle,kind:surface.kind,structureId:surface.structureId,domainMin:surface.domainMin,domainMax:surface.domainMax};
+      obj.N=obj.m*GRAVITY*n.ny; obj.f=0;
+    } else {
+      obj.onSurface=null; obj.N=0; obj.f=0;
+    }
+  }
+  function currentTiltAngle(obj){ return obj.onSurface ? obj.onSurface.angle : 0; }
+
+  function addRamp(xCorner,yBase,height,angleDeg,flip,snapInt,collisionType,restitutionOwn){
+    xCorner=snapInt?Math.round(xCorner):xCorner;
+    yBase=Math.max(0, snapInt?Math.round(yBase):yBase);
+    const clampedDeg=Math.max(1,Math.min(89,angleDeg));
+    const rad=clampedDeg*Math.PI/180, baseLen=height/Math.tan(rad);
+    const x2=xCorner, x1=flip?(x2+baseLen):(x2-baseLen);
+    const angle=flip?(Math.PI-rad):rad;
+    structures.push({id:structIdCounter++,type:'ramp',x1,x2,yBase,height,angle,angleDeg:clampedDeg,flip:!!flip,
+      collisionType:collisionType||'1', restitutionOwn:restitutionOwn!==undefined?restitutionOwn:0.6});
+  }
+  function addHLine(x,y,length,snapInt,collisionType,restitutionOwn){ structures.push({id:structIdCounter++,type:'hline',x:snapInt?Math.round(x):x,y:Math.max(0,snapInt?Math.round(y):y),length:Math.max(0.5,length),
+    collisionType:collisionType||'1', restitutionOwn:restitutionOwn!==undefined?restitutionOwn:0.6}); }
+  function addVLine(x,yBottom,length,snapInt,collisionType,restitutionOwn){ structures.push({id:structIdCounter++,type:'vline',x:snapInt?Math.round(x):x,yBottom:Math.max(0,snapInt?Math.round(yBottom):yBottom),length:Math.max(0.5,length),
+    collisionType:collisionType||'1', restitutionOwn:restitutionOwn!==undefined?restitutionOwn:0.6}); }
+  function heightFromBasis(basis,len,angleDeg){ const rad=angleDeg*Math.PI/180; if(basis==='base') return len*Math.tan(rad); if(basis==='hyp') return len*Math.sin(rad); return len; }
+  function removeZonesForStructure(id){ frictionZones=frictionZones.filter(z=>!(z.kind==='structure'&&z.structureId===id)); }
+  function pointInTriangle(px,py,x1,y1,x2,y2,x3,y3){
+    function sgn(px,py,ax,ay,bx,by){ return (px-bx)*(ay-by)-(ax-bx)*(py-by); }
+    const d1=sgn(px,py,x1,y1,x2,y2), d2=sgn(px,py,x2,y2,x3,y3), d3=sgn(px,py,x3,y3,x1,y1);
+    const hasNeg=(d1<0)||(d2<0)||(d3<0), hasPos=(d1>0)||(d2>0)||(d3>0);
+    return !(hasNeg&&hasPos);
+  }
+  function pointToSegmentDist(px,py,x1,y1,x2,y2){
+    const dx=x2-x1,dy=y2-y1,lenSq=dx*dx+dy*dy||1e-9;
+    let t=((px-x1)*dx+(py-y1)*dy)/lenSq; t=Math.max(0,Math.min(1,t));
+    return Math.hypot(px-(x1+t*dx), py-(y1+t*dy));
+  }
+  function hitTestStructure(s,wx,wy,thresh){
+    if(s.type==='ramp') return pointInTriangle(wx,wy,s.x1,s.yBase,s.x2,s.yBase,s.x2,s.yBase+s.height) || pointToSegmentDist(wx,wy,s.x2,s.yBase,s.x2,s.yBase+s.height)<thresh || pointToSegmentDist(wx,wy,s.x1,s.yBase,s.x2,s.yBase+s.height)<thresh;
+    if(s.type==='hline') return pointToSegmentDist(wx,wy,s.x,s.y,s.x+s.length,s.y)<thresh;
+    if(s.type==='vline') return pointToSegmentDist(wx,wy,s.x,s.yBottom,s.x,s.yBottom+s.length)<thresh;
+    return false;
+  }
+
+  function findSpawnX(){
+    const half=OBJ_SIZE_M/2, margin=0.3, step=OBJ_SIZE_M+margin+1;
+    const base=originX+viewRangeX()*0.35;
+    for(let k=0;k<50;k++){
+      const cands=k===0?[base]:[base+k*step, base-k*step];
+      for(const cx of cands){
+        let overlap=false;
+        for(const o of objects){ if(Math.abs(cx-o.x)<(OBJ_SIZE_M+margin)){ overlap=true; break; } }
+        if(!overlap) return cx;
+      }
+    }
+    return base;
+  }
+
+  function createObject(opts){
+    opts=opts||{};
+    const counter=objCounter++;
+    const m=opts.m!==undefined?opts.m:DEFAULT_OBJ.m;
+    const F=opts.F!==undefined?opts.F:DEFAULT_OBJ.F;
+    const theta=opts.theta!==undefined?opts.theta:DEFAULT_OBJ.theta;
+    const vx0=opts.vx!==undefined?opts.vx:DEFAULT_OBJ.vx;
+    const vy0=opts.vy!==undefined?opts.vy:DEFAULT_OBJ.vy;
+    const x0=opts.x!==undefined?opts.x:findSpawnX();
+    const surface=getSupportSurface(x0);
+    const y0=opts.y!==undefined?opts.y:(surface.y+OBJ_SIZE_M/2);
+    const obj={ id:counter, name:opts.name||('물체 '+(counter+1)), m,F,theta, x:x0,y:y0, vx:vx0,vy:vy0, ax:0,ay:0, N:0,f:0, onSurface:null,
+      p0x:m*vx0, p0y:m*vy0, showVectors:opts.showVectors!==undefined?opts.showVectors:true,
+      collisionType:opts.collisionType||'global', restitutionOwn:opts.restitutionOwn!==undefined?opts.restitutionOwn:0.6,
+      forceDuration:(opts.forceDuration!==undefined&&opts.forceDuration!==null)?opts.forceDuration:Infinity, forceStartTime:0,
+      color:opts.color||PALETTE[counter%PALETTE.length], dragging:false };
+    objects.push(obj);
+    snapToNearestSurface(obj);
+    obj.spawnX=obj.x; obj.spawnY=obj.y;
+    history[obj.id]=emptyHistory();
+    preRunSnapshot=null;
+    return obj;
+  }
+  function emptyHistory(){ return {t:[],x:[],y:[],vx:[],vy:[],vMag:[],ax:[],ay:[],aMag:[],Fx:[],Fy:[],Fnetx:[],Fnety:[],FnetMag:[],px:[],py:[],N:[],f:[],K:[],Ug:[],E:[],Jx:[],J:[]}; }
+  function deleteObject(id){
+    if(objects.length<=1) return;
+    objects=objects.filter(o=>o.id!==id); delete history[id]; preRunSnapshot=null;
+    renderObjectPanels(); renderAllLegends();
+  }
+
+  function norm360(deg){ return ((deg%360)+360)%360; }
+  function applyMassChange(obj,val){ obj.m=Math.max(0.01,val); refreshObjectDerived(obj); }
+  function applyForceChange(obj,val){ obj.F=val; refreshObjectDerived(obj); }
+  function applyThetaChange(obj,val){ obj.theta=norm360(val); refreshObjectDerived(obj); }
+  function applyAccelMagChange(obj,val){ obj.F=Math.max(0,val)*obj.m; refreshObjectDerived(obj); syncField(obj.id,'F',obj.F); }
+  function applyFxChange(obj,val){
+    const {Fy}=forceComponents(obj);
+    obj.F=Math.hypot(val,Fy); obj.theta=(Math.abs(val)<1e-9&&Math.abs(Fy)<1e-9)?obj.theta:norm360(Math.atan2(Fy,val)*180/Math.PI);
+    syncField(obj.id,'F',obj.F); syncField(obj.id,'theta',obj.theta); syncField(obj.id,'aMag', obj.m>0?obj.F/obj.m:0);
+  }
+  function applyFyChange(obj,val){
+    const {Fx}=forceComponents(obj);
+    obj.F=Math.hypot(Fx,val); obj.theta=(Math.abs(Fx)<1e-9&&Math.abs(val)<1e-9)?obj.theta:norm360(Math.atan2(val,Fx)*180/Math.PI);
+    syncField(obj.id,'F',obj.F); syncField(obj.id,'theta',obj.theta); syncField(obj.id,'aMag', obj.m>0?obj.F/obj.m:0);
+  }
+  function checkLaunch(obj){
+    if(obj.onSurface){
+      const n=obj.onSurface;
+      const vn=obj.vx*n.nx+obj.vy*n.ny;
+      if(vn>1e-6){ obj.onSurface=null; obj.N=0; obj.f=0; }
+    }
+  }
+  function applyVxChange(obj,val){ obj.vx=val; checkLaunch(obj); syncVelocityDerived(obj); }
+  function applyVyChange(obj,val){ obj.vy=val; checkLaunch(obj); syncVelocityDerived(obj); }
+  function applyVMagChange(obj,val){
+    const theta=Math.hypot(obj.vx,obj.vy)>1e-9?Math.atan2(obj.vy,obj.vx):0;
+    obj.vx=val*Math.cos(theta); obj.vy=val*Math.sin(theta);
+    checkLaunch(obj); syncField(obj.id,'vx',obj.vx); syncField(obj.id,'vy',obj.vy);
+  }
+  function applyVAngleChange(obj,val){
+    const mag=Math.hypot(obj.vx,obj.vy);
+    const rad=norm360(val)*Math.PI/180;
+    obj.vx=mag*Math.cos(rad); obj.vy=mag*Math.sin(rad);
+    checkLaunch(obj); syncField(obj.id,'vx',obj.vx); syncField(obj.id,'vy',obj.vy); syncField(obj.id,'vAngle',norm360(val));
+  }
+  function syncVelocityDerived(obj){
+    const mag=Math.hypot(obj.vx,obj.vy);
+    const angDeg=mag>1e-9?norm360(Math.atan2(obj.vy,obj.vx)*180/Math.PI):0;
+    syncField(obj.id,'vMag',mag); syncField(obj.id,'vAngle',angDeg);
+  }
+  function applyXChange(obj,val){ obj.x=val; snapToNearestSurface(obj); }
+  function applyBottomYChange(obj,val){ obj.y=val+OBJ_SIZE_M/2; snapToNearestSurface(obj); }
+
+  function refreshObjectDerived(obj){
+    const {Fx,Fy}=forceComponents(obj);
+    syncField(obj.id,'Fx',Fx); syncField(obj.id,'Fy',Fy);
+    syncField(obj.id,'aMag', obj.m>0?obj.F/obj.m:0);
+  }
+
+  function renderObjectPanels(){
+    objectsPanel.innerHTML='';
+    objects.forEach(obj=>{
+      const card=document.createElement('div'); card.className='obj-card';
+      const head=document.createElement('div'); head.className='obj-card-head';
+      head.innerHTML='<div class="obj-tag"><span class="obj-swatch" style="background:'+obj.color+'"></span>'+obj.name+'</div>';
+      const delBtn=document.createElement('button'); delBtn.className='obj-del'; delBtn.textContent='물체 삭제';
+      delBtn.disabled=objects.length<=1; delBtn.addEventListener('click', ()=>deleteObject(obj.id));
+      const collapseBtn=document.createElement('button'); collapseBtn.type='button'; collapseBtn.className='obj-collapse-btn';
+      collapseBtn.textContent=obj.cardCollapsed?'▸':'▾'; collapseBtn.title='물체 설정 접기/펼치기';
+      const headRight=document.createElement('div'); headRight.style.cssText='display:flex;align-items:center;gap:6px;';
+      headRight.appendChild(collapseBtn); headRight.appendChild(delBtn);
+      head.appendChild(headRight); card.appendChild(head);
+      const bodyWrap=document.createElement('div'); bodyWrap.className='obj-card-body';
+      if(obj.cardCollapsed) bodyWrap.style.display='none';
+      collapseBtn.addEventListener('click', ()=>{
+        obj.cardCollapsed=!obj.cardCollapsed;
+        bodyWrap.style.display=obj.cardCollapsed?'none':'';
+        collapseBtn.textContent=obj.cardCollapsed?'▸':'▾';
+      });
+
+      const vecRow=document.createElement('div'); vecRow.className='field-row';
+      const vecLabel=document.createElement('label'); vecLabel.textContent='벡터 표시';
+      const vecChk=document.createElement('input'); vecChk.type='checkbox'; vecChk.checked=obj.showVectors;
+      vecChk.addEventListener('change', ()=>{ obj.showVectors=vecChk.checked; });
+      vecRow.appendChild(vecLabel); vecRow.appendChild(vecChk); bodyWrap.appendChild(vecRow);
+
+      const ctRow=document.createElement('div'); ctRow.className='field-row';
+      const ctLabel=document.createElement('label'); ctLabel.textContent='충돌 유형(이 물체)';
+      const ctSel=document.createElement('select');
+      [['global','전체설정 따르기'],['1','완전탄성'],['custom','비탄성(반발계수)'],['0','완전비탄성']].forEach(function(pair){
+        const o=document.createElement('option'); o.value=pair[0]; o.textContent=pair[1]; if(obj.collisionType===pair[0]) o.selected=true; ctSel.appendChild(o);
+      });
+      ctSel.addEventListener('change', ()=>{ obj.collisionType=ctSel.value; ownRestInput.style.display=ctSel.value==='custom'?'inline-block':'none'; });
+      const ownRestInput=document.createElement('input'); ownRestInput.type='number'; ownRestInput.step='0.05'; ownRestInput.min='0'; ownRestInput.max='1'; ownRestInput.value=obj.restitutionOwn;
+      ownRestInput.style.cssText='width:56px;margin-left:6px;'+(obj.collisionType==='custom'?'':'display:none;');
+      ownRestInput.addEventListener('input', ()=>{ const v=parseFloat(ownRestInput.value); if(!isNaN(v)) obj.restitutionOwn=Math.max(0,Math.min(1,v)); });
+      ctRow.appendChild(ctLabel); ctRow.appendChild(ctSel); ctRow.appendChild(ownRestInput); bodyWrap.appendChild(ctRow);
+
+      bodyWrap.appendChild(makeFieldRow('질량 m','kg',obj.m, v=>applyMassChange(obj,v)));
+      const {Fx:Fx0,Fy:Fy0}=forceComponents(obj);
+      bodyWrap.appendChild(makeFieldRow('가속도 크기 |a|','m/s2', obj.m>0?obj.F/obj.m:0, v=>applyAccelMagChange(obj,v), 'aMag'));
+      bodyWrap.appendChild(makeFieldRow('힘 |F|','N',obj.F, v=>applyForceChange(obj,v), 'F'));
+      bodyWrap.appendChild(makeFieldRow('힘 방향 θ','°',obj.theta, v=>applyThetaChange(obj,v), 'theta'));
+      bodyWrap.appendChild(makeXYRow('힘 성분', 'N', Fx0, Fy0, v=>applyFxChange(obj,v), v=>applyFyChange(obj,v), 'Fx', 'Fy'));
+      const hint=document.createElement('div'); hint.className='field-hint'; hint.textContent='θ 기준: +x축, 반시계방향 (0~360도). x성분은 오른쪽(+)/왼쪽(-)'; bodyWrap.appendChild(hint);
+      bodyWrap.appendChild(makeDurationRow(obj));
+      const vInitMag=Math.hypot(obj.vx,obj.vy), vInitAngle=vInitMag>1e-9?norm360(Math.atan2(obj.vy,obj.vx)*180/Math.PI):0;
+      bodyWrap.appendChild(makeFieldRow('속도 |v|','m/s', vInitMag, v=>applyVMagChange(obj,v), 'vMag'));
+      bodyWrap.appendChild(makeFieldRow('속도 방향','°', vInitAngle, v=>applyVAngleChange(obj,v), 'vAngle'));
+      bodyWrap.appendChild(makeXYRow('속도 성분', 'm/s', obj.vx, obj.vy, v=>applyVxChange(obj,v), v=>applyVyChange(obj,v), 'vx', 'vy'));
+      bodyWrap.appendChild(makeXYRow('위치', 'm', obj.x, bottomY(obj), v=>applyXChange(obj,v), v=>applyBottomYChange(obj,v), 'x', 'y'));
+      card.appendChild(bodyWrap);
+
+      objectsPanel.appendChild(card);
+      refreshObjectDerived(obj);
+
+      function makeFieldRow(labelText,unit,value,onChange,tag){
+        const row=document.createElement('div'); row.className='field-row';
+        const label=document.createElement('label'); label.textContent=labelText;
+        const input=document.createElement('input'); input.type='number'; input.step='any'; input.value=round2(value);
+        input.dataset.objId=obj.id; if(tag) input.dataset.tag=tag;
+        input.addEventListener('input', ()=>{ const val=parseFloat(input.value); if(isNaN(val)) return; onChange(val); refreshInfoTable(); });
+        const unitSpan=document.createElement('span'); unitSpan.className='unit'; unitSpan.textContent=unit;
+        row.appendChild(label); row.appendChild(input); row.appendChild(unitSpan);
+        return row;
+      }
+      function makeXYRow(labelText,unit,valX,valY,onChangeX,onChangeY,tagX,tagY){
+        const row=document.createElement('div'); row.className='xy-row';
+        const label=document.createElement('span'); label.className='xy-label'; label.textContent=labelText+'('+unit+')'; row.appendChild(label);
+        function box(letter,value,onChange,tag){
+          const b=document.createElement('div'); b.className='xy-box';
+          const s=document.createElement('span'); s.textContent=letter;
+          const input=document.createElement('input'); input.type='number'; input.step='any'; input.value=round2(value);
+          input.dataset.objId=obj.id; input.dataset.tag=tag;
+          input.addEventListener('input', ()=>{ const val=parseFloat(input.value); if(isNaN(val)) return; onChange(val); refreshInfoTable(); });
+          b.appendChild(s); b.appendChild(input);
+          return b;
+        }
+        row.appendChild(box('x',valX,onChangeX,tagX));
+        row.appendChild(box('y',valY,onChangeY,tagY));
+        return row;
+      }
+      function makeDurationRow(objRef){
+        const row=document.createElement('div'); row.className='field-row';
+        const label=document.createElement('label'); label.textContent='힘 작용 시간';
+        const wrap=document.createElement('div'); wrap.style.cssText='display:flex;align-items:center;gap:6px;';
+        function renderControl(){
+          wrap.innerHTML='';
+          if(!isFinite(objRef.forceDuration)){
+            const badge=document.createElement('button'); badge.type='button'; badge.className='duration-badge';
+            badge.textContent='무제한'; badge.dataset.objId=objRef.id; badge.dataset.tag='forceDuration';
+            badge.addEventListener('click', ()=>{
+              objRef.forceDuration=0; renderControl();
+              const inp=wrap.querySelector('input'); if(inp){ inp.focus(); inp.select(); }
+            });
+            wrap.appendChild(badge);
+          } else {
+            const input=document.createElement('input'); input.type='number'; input.step='any'; input.min='0';
+            input.dataset.objId=objRef.id; input.dataset.tag='forceDuration';
+            input.value=round2(objRef.forceDuration);
+            input.addEventListener('input', ()=>{
+              const raw=input.value.trim();
+              if(raw===''){ objRef.forceDuration=Infinity; renderControl(); return; }
+              const v=parseFloat(raw);
+              if(!isNaN(v) && v>=0) objRef.forceDuration=v;
+            });
+            const unitSpan=document.createElement('span'); unitSpan.className='unit'; unitSpan.textContent='s';
+            wrap.appendChild(input); wrap.appendChild(unitSpan);
+          }
+        }
+        renderControl();
+        row.appendChild(label); row.appendChild(wrap);
+        return row;
+      }
+    });
+  }
+  function syncField(objId,tag,value){
+    const input=objectsPanel.querySelector('input[data-obj-id="'+objId+'"][data-tag="'+tag+'"]');
+    if(input) input.value=round2(value);
+  }
+
+  // ===========================================================
+  // PHYSICS ENGINE
+  //
+  // Two distinct regimes, matched to the two distinct physical situations:
+  //
+  //  (A) FREE FLIGHT (obj.onSurface === null): only gravity and the applied
+  //      force act. Integrated with semi-implicit Euler, with continuous
+  //      (swept) collision detection against every surface so fast objects
+  //      cannot tunnel through thin structures.
+  //
+  //  (B) CONTACT / SLIDING (obj.onSurface !== null): the object is
+  //      constrained to the surface. The normal force N is SOLVED FROM THE
+  //      CONSTRAINT (not assumed): it is whatever value (>= 0) makes the
+  //      normal-direction acceleration exactly zero. If that would require
+  //      N < 0 (the surface pulling the object back), the constraint is
+  //      infeasible and the object leaves — this is the standard rigid-body
+  //      contact condition. While in contact, motion is integrated ONLY
+  //      along the tangent (a 1-D problem), so the object never drifts into
+  //      the surface between checks and there is nothing to "correct" —
+  //      this is what removes the micro-bounce jitter that a per-step
+  //      collision check produces. Seam transitions between two supportive
+  //      surfaces that meet with (near) zero gap redirect velocity to the
+  //      new tangent, preserving speed — an idealized corner does no work.
+  //
+  // Restitution (e) applies at two independent levels:
+  //  - restitutionFor(obj): the "충돌 유형" setting, used ONLY for
+  //    object-to-object collisions (resolveCollision2D below).
+  //  - each structure's own .restitution field (default 1), and the global
+  //    groundRestitution (default 0), used ONLY when an object genuinely
+  //    IMPACTS that piece of the static environment (a landing from free
+  //    flight, or hitting a wall/ceiling/underside) — set per structure so
+  //    e.g. a bouncy ramp and a non-bouncy floor can coexist.
+  // A landing whose incoming normal speed is at or below RESTING_VN_THRESHOLD
+  // always settles into contact regardless of that surface's e — this is
+  // the standard fix for the fact that an idealized elastic landing
+  // mathematically bounces forever with geometrically shrinking height (a
+  // Zeno sequence); below that speed the "bounce" is smaller than one
+  // physics step can resolve anyway and is indistinguishable from rest.
+  // ===========================================================
+  const PHYSICS_DT = 1/240;              // fixed physics timestep (decoupled from render FPS)
+  // A function, not a stale constant — GRAVITY can be changed by the user
+  // at any time (including to 0 for weightlessness), so this must always
+  // reflect the CURRENT value rather than whatever GRAVITY was when the
+  // script first loaded.
+  function restingVnThreshold(){ return 2*GRAVITY*PHYSICS_DT; } // ~0.16 m/s at 9.8: a few steps' worth of gravitational settling
+
+  // Object-to-object collision type only (spec: never used for the static
+  // environment — see restitutionForSurface below).
+  function restitutionFor(obj){
+    if(obj.collisionType==='1') return 1;
+    if(obj.collisionType==='0') return 0;
+    if(obj.collisionType==='custom') return obj.restitutionOwn;
+    if(collisionTypeSelect.value==='1') return 1;
+    if(collisionTypeSelect.value==='0') return 0;
+    const v=parseFloat(restitutionInput.value); return isNaN(v)?0.6:Math.max(0,Math.min(1,v));
+  }
+  // The static environment's own restitution: each structure carries its
+  // own value; the ground is one shared global value.
+  function restitutionForSurface(kind, structureId){
+    if(kind==='ground'){
+      if(groundCollisionType==='1') return 1;
+      if(groundCollisionType==='0') return 0;
+      return Math.max(0,Math.min(1,groundRestitutionOwn));
+    }
+    const s=structures.find(s=>s.id===structureId);
+    if(!s) return 1;
+    if(s.collisionType==='1') return 1;
+    if(s.collisionType==='0') return 0;
+    return Math.max(0,Math.min(1,s.restitutionOwn!==undefined?s.restitutionOwn:0.6));
+  }
+
+  function restitutionFor(obj){
+    if(obj.collisionType==='1') return 1;
+    if(obj.collisionType==='0') return 0;
+    if(obj.collisionType==='custom') return obj.restitutionOwn;
+    if(collisionTypeSelect.value==='1') return 1;
+    if(collisionTypeSelect.value==='0') return 0;
+    const v=parseFloat(restitutionInput.value); return isNaN(v)?0.6:Math.max(0,Math.min(1,v));
+  }
+
+  // Candidate collision planes. Two-sided structures (a wall's back, a
+  // platform's underside) resolve which side is "outward" from the object's
+  // position at the start of this step (x0,y0).
+  // Is this ramp's own back wall entirely embedded inside a DIFFERENT,
+  // taller structure's solid body at that x — e.g. a short ramp stacked
+  // directly under a taller one sharing the same base and slope? If so,
+  // there is nothing physically exposed there to collide with: the "wall"
+  // is buried, and treating it as a real obstacle is what caused an
+  // object smoothly climbing the taller ramp's continuous slope to
+  // suddenly, spuriously "hit a wall" exactly at the shorter ramp's own
+  // boundary, even though solid material continues seamlessly past it.
+  function isWallBuried(s){
+    const peakY=s.yBase+s.height;
+    for(const s2 of structures){
+      if(s2.id===s.id || s2.type!=='ramp') continue;
+      const xmin2=Math.min(s2.x1,s2.x2), xmax2=Math.max(s2.x1,s2.x2);
+      if(s.x2<xmin2-1e-6 || s.x2>xmax2+1e-6) continue;
+      const t2=(s.x2-s2.x1)/((s2.x2-s2.x1)||1e-6);
+      const y2=s2.yBase+t2*s2.height;
+      if(y2>=peakY-1e-6) return true;
+    }
+    return false;
+  }
+  function buildSurfaceList(x0,y0,nonSupportiveOnly){
+    const list=[];
+    const push=(nx,ny,refX,refY,extra)=>{ if(nonSupportiveOnly && ny>0.01) return; list.push(Object.assign({nx,ny,refX,refY},extra)); };
+    push(0,1,0,0,{zoneKind:'ground',zoneId:null,angle:0,domainMin:-1e6,domainMax:1e6});
+    structures.forEach(s=>{
+      if(s.type==='ramp'){
+        const n=surfaceNormal(s.angle);
+        const xmin=Math.min(s.x1,s.x2), xmax=Math.max(s.x1,s.x2);
+        push(n.nx,n.ny,s.x1,s.yBase,{zoneKind:'structure',zoneId:s.id,angle:s.angle,domainMin:xmin,domainMax:xmax,
+          domain:(cx)=>cx>=xmin-1e-6&&cx<=xmax+1e-6});
+        if(s.height>0 && !isWallBuried(s)){
+          const side=x0>=s.x2?1:-1;
+          push(side,0,s.x2,0,{mu:friction,zoneKind:'structure',zoneId:s.id,domain:(cx,cy)=>cy>=s.yBase-1e-6&&cy<=s.yBase+s.height+1e-6});
+        }
+      } else if(s.type==='hline'){
+        const side=y0>=s.y?1:-1;
+        const xmin=Math.min(s.x,s.x+s.length), xmax=Math.max(s.x,s.x+s.length);
+        push(0,side,0,s.y,{zoneKind:'structure',zoneId:s.id,angle:0,domainMin:xmin,domainMax:xmax,
+          domain:(cx)=>cx>=xmin-1e-6&&cx<=xmax+1e-6});
+      } else if(s.type==='vline'){
+        const side=x0>=s.x?1:-1;
+        push(side,0,s.x,0,{mu:friction,zoneKind:'structure',zoneId:s.id,domain:(cx,cy)=>cy>=s.yBottom-1e-6&&cy<=s.yBottom+s.length+1e-6});
+      }
+    });
+    return list;
+  }
+  function planeDist(x,y,c){ return (x-c.refX)*c.nx+(y-c.refY)*c.ny-OBJ_SIZE_M/2; }
+  // Continuous (swept) collision: the exact fraction t in [0,1] along the
+  // straight sub-path where the object's edge first reaches a plane —
+  // required so an impact is resolved AT the true contact point/velocity,
+  // never after already overshooting into the surface.
+  function findEarliestCrossing(x0,y0,x1,y1,nonSupportiveOnly){
+    const list=buildSurfaceList(x0,y0,nonSupportiveOnly);
+    let best=null;
+    list.forEach(c=>{
+      const d0=planeDist(x0,y0,c), d1=planeDist(x1,y1,c);
+      let t=null;
+      if(d0>=-1e-9 && d1<0){ t=d0/((d0-d1)||1e-9); t=Math.max(0,Math.min(1,t)); }
+      // "Already touching" safety net — but only for a GENUINELY tiny
+      // pre-penetration (a few cm at most, from floating-point residue
+      // left by a previous resolution). Without the lower bound, a
+      // FLOATING structure (one whose plane, extended infinitely beyond
+      // its own finite extent, sweeps through space nowhere near the
+      // structure itself) could "catch" an object that starts merely
+      // underneath it — arbitrarily far away — since the object being on
+      // the solid side of that infinite plane has nothing to do with
+      // actually being near the finite piece of it that's real. A ramp
+      // resting on the ground never showed this (nothing sensible starts
+      // below y=0 anyway), which is why it went unnoticed until a floating
+      // one was tried.
+      else if(d0<-1e-9 && d0>-0.5){ t=0; }
+      if(t===null) return;
+      const cx=x0+(x1-x0)*t, cy=y0+(y1-y0)*t;
+      if(c.domain && !c.domain(cx,cy)) return;
+      const mu = c.zoneKind ? getZoneMu(c.zoneKind,c.zoneId,cx) : c.mu;
+      const kind = c.zoneKind||'wall', structureId = c.zoneId!==undefined?c.zoneId:null;
+      if(best===null || t<best.t) best={t,nx:c.nx,ny:c.ny,mu,angle:c.angle||0,kind,structureId,domainMin:c.domainMin,domainMax:c.domainMax,e:restitutionForSurface(kind,structureId)};
+    });
+    return best;
+  }
+  // A genuine impact against the static environment (wall/ceiling/platform
+  // underside): decompose into normal/tangential, reflect the normal
+  // component by that specific structure's (or the ground's) own
+  // restitution — never the object-to-object "충돌 유형" setting — apply
+  // Coulomb friction to the tangential component proportional to the
+  // normal impulse actually delivered.
+  function reflectVelocity(obj, hit){
+    const {nx,ny,mu,e}=hit;
+    const vn=obj.vx*nx+obj.vy*ny;
+    const vnAfter = vn<0 ? -e*vn : vn;
+    const tx=-ny, ty=nx;
+    const vt=obj.vx*tx+obj.vy*ty;
+    const impulse=Math.abs(vnAfter-vn);
+    const maxFric=mu*impulse;
+    const vtAfter = vt - Math.sign(vt)*Math.min(Math.abs(vt), maxFric);
+    obj.vx=vnAfter*nx+vtAfter*tx; obj.vy=vnAfter*ny+vtAfter*ty;
+  }
+
+  function enterContact(obj, hit){
+    obj.onSurface={nx:hit.nx,ny:hit.ny,angle:hit.angle,kind:hit.kind,structureId:hit.structureId,domainMin:hit.domainMin,domainMax:hit.domainMax};
+  }
+
+  // Regime (A): free flight with swept collision.
+  function flyFree(obj, dt){
+    let remaining=dt;
+    for(let iter=0; iter<8 && remaining>1e-9; iter++){
+      const x0=obj.x, y0=obj.y, x1=x0+obj.vx*remaining, y1=y0+obj.vy*remaining;
+      const hit=findEarliestCrossing(x0,y0,x1,y1,false);
+      if(!hit){ obj.x=x1; obj.y=y1; return; }
+      obj.x=x0+(x1-x0)*hit.t; obj.y=y0+(y1-y0)*hit.t;
+      if(hit.ny>0.01){
+        // Landing on a supportive surface: bounce per that surface's OWN
+        // restitution (never the object's "충돌 유형"), unless the incoming
+        // speed is at/below the Zeno-settling threshold, in which case it
+        // always settles into contact regardless of e.
+        const vn=obj.vx*hit.nx+obj.vy*hit.ny;
+        if(-vn<=restingVnThreshold() || hit.e===0){
+          if(vn<0){ obj.vx-=vn*hit.nx; obj.vy-=vn*hit.ny; }
+          enterContact(obj, hit);
+          const rem=remaining*(1-Math.max(hit.t,0.02));
+          if(rem>1e-9) slideOnSurface(obj, rem);
+          return;
+        } else {
+          reflectVelocity(obj, hit);
+        }
+      } else {
+        reflectVelocity(obj, hit);
+      }
+      // Force at least a little real progress in time each pass. At an
+      // exact, degenerate corner shared by more than one surface, hit.t can
+      // repeatedly come back as 0 ("already touching") for every candidate
+      // in turn; without this floor, `remaining` would never shrink and the
+      // loop would spin doing nothing while the outer per-step gravity
+      // update kept adding velocity forever (an energy leak with no upper
+      // bound). Using max(hit.t, 0.02) guarantees the loop actually
+      // terminates and time is genuinely consumed.
+      remaining=remaining*(1-Math.max(hit.t,0.02));
+      // A bounce that used up (essentially) the whole remaining step is the
+      // ORDINARY, common case — e.g. hit.t landing right at 1.0 because the
+      // wall was reached exactly at the end of this substep's path — and
+      // must return normally, keeping the velocity reflectVelocity just
+      // computed. Only truly running out of iterations (below) means the
+      // object never settled anywhere, which is the actual failure case.
+      if(remaining<=1e-9) return;
+    }
+    // Iteration budget exhausted without resolving (only possible in the
+    // same degenerate multi-surface-corner situation described above): stop
+    // the object safely rather than letting it silently carry an unresolved,
+    // ever-growing velocity into the next physics step.
+    obj.vx=0; obj.vy=0;
+  }
+
+  // Regime (B): constrained contact. N is solved from "no acceleration
+  // through the rigid surface"; if that needs N<0 the object leaves with
+  // its true current velocity (spec §10, §11) — no forced correction.
+  function slideOnSurface(obj, dt){
+    const surf=obj.onSurface;
+    const {Fx,Fy}=forceComponents(obj);
+    const N = obj.m*GRAVITY*surf.ny - (Fx*surf.nx+Fy*surf.ny);
+    if(N<0){
+      obj.onSurface=null; obj.N=0; obj.f=0;
+      const ax=obj.m>0?Fx/obj.m:0, ay=(obj.m>0?Fy/obj.m:0)-GRAVITY;
+      obj.vx+=ax*dt; obj.vy+=ay*dt; obj.ax=ax; obj.ay=ay;
+      flyFree(obj, dt);
+      return;
+    }
+    obj.N=N;
+
+    const angle=surf.angle;
+    const zoneMu=getFrictionAt(obj.x,surf.kind,surf.structureId);
+    const mu=zoneMu!==null?zoneMu:friction;
+    const thetaRad=obj.theta*Math.PI/180;
+    // Use the SAME duration-aware force magnitude as Fx,Fy above (not raw
+    // obj.F directly) — otherwise a force with a finite duration would
+    // correctly stop contributing to N (via Fx,Fy) but keep silently
+    // accelerating the object tangentially forever.
+    const Fmag=Math.hypot(Fx,Fy);
+    const Fpm=obj.m>0?Fmag/obj.m:0;
+    const aGravityT=-GRAVITY*Math.sin(angle);
+    const aForceT=Fpm*Math.cos(thetaRad-angle);
+    const driving=aGravityT+aForceT;
+    const drivingForce=driving*obj.m;
+    let vt=obj.vx*Math.cos(angle)+obj.vy*Math.sin(angle);
+    let f;
+    if(Math.abs(vt)<0.005 && Math.abs(drivingForce)<=mu*N){
+      f=-drivingForce; vt=0;
+    } else {
+      f=-Math.sign(vt!==0?vt:driving)*mu*N;
+      vt += (driving + f/obj.m)*dt;
+    }
+    obj.f=f;
+    obj.vx=vt*Math.cos(angle); obj.vy=vt*Math.sin(angle);
+    obj.ax=(driving+f/obj.m)*Math.cos(angle); obj.ay=(driving+f/obj.m)*Math.sin(angle);
+
+    const x0=obj.x, y0=obj.y, x1=x0+obj.vx*dt, y1=y0+obj.vy*dt;
+
+    // A real obstacle directly ahead is a genuine impact.
+    const wallHit=findEarliestCrossing(x0,y0,x1,y1,true);
+    if(wallHit){
+      obj.x=x0+(x1-x0)*wallHit.t; obj.y=y0+(y1-y0)*wallHit.t;
+      reflectVelocity(obj, wallHit);
+      obj.onSurface=null; obj.N=0; obj.f=0;
+      return;
+    }
+
+    // The object's raw (surface, not object-center) height if it kept
+    // following its own line to x1 — since it never left this surface
+    // during the tangential integration above, y1 = (that line's height at
+    // x1) + half*surf.ny exactly, so this is just solving that backwards.
+    // This is only reliable while x1 is still within OUR OWN structure's
+    // actual extent (past that, "our line" is a meaningless extrapolation
+    // — a descending ramp's line continued past its base can dip below
+    // ground, which used to let objects fall through the world while still
+    // reporting themselves as resting on a ramp that had long since ended).
+    // So the first thing to establish is simply: are we still within our
+    // own structure's real domain at x1, or not? (Ground has no domain —
+    // always "yes".)
+    let ownMin=null, ownMax=null;
+    if(surf.kind==='structure'){
+      const s=structures.find(s2=>s2.id===surf.structureId);
+      if(s){
+        if(s.type==='ramp'){ ownMin=Math.min(s.x1,s.x2); ownMax=Math.max(s.x1,s.x2); }
+        else if(s.type==='hline'){ ownMin=Math.min(s.x,s.x+s.length); ownMax=Math.max(s.x,s.x+s.length); }
+      }
+    }
+    const stillWithinOwnDomain = ownMin===null || (x1>=ownMin-1e-6 && x1<=ownMax+1e-6);
+
+    if(stillWithinOwnDomain){
+      // Our own line is still geometrically real here — safe to compare it
+      // directly against whatever's tallest at x1. This is what correctly
+      // handles a DIFFERENT, taller structure overlapping OUR OWN structure
+      // partway along it (e.g. a small ramp's slope passing under a larger
+      // one) as a normal seam, rather than forcing the object airborne just
+      // because something else happens to register as "tallest" there —
+      // we haven't actually left our own surface, so there is nothing wrong
+      // to react to unless the two surfaces are actually close enough to
+      // matter. This is computed from OUR OWN SURFACE'S GEOMETRY DIRECTLY
+      // (not by de-offsetting the object's own y) so the comparison is
+      // always exact — it can never inherit even a tiny drift the object's
+      // actual position may have picked up from an earlier seam (position
+      // is deliberately left untouched at a seam, to avoid injecting
+      // energy there — see applySeamTransition below).
+      const rawMyLineY = getStructureRawY(surf.kind, surf.structureId, x1);
+      const next = getSupportSurface(x1);
+      const closeEnough = Math.abs(next.y - rawMyLineY) < 0.05;
+      const changed = closeEnough && (Math.abs(next.angle-angle)>1e-9 || next.kind!==surf.kind || next.structureId!==surf.structureId);
+      if(changed){
+        applySeamTransition(obj, surf, angle, next, x1, y1);
+        return;
+      }
+      // Either it matched (same surface, nothing to do) or it's a taller
+      // structure that isn't actually close enough to be touching yet —
+      // either way, keep going undisturbed on our own surface.
+      obj.x=x1; obj.y=y1;
+      return;
+    }
+    // We've left our own structure's real domain. Do NOT extrapolate our
+    // line past here — find exactly where along [x0,x1] this happens by
+    // bisection, using domain-aware matching throughout (never trusting an
+    // extrapolated line), then resolve seam-vs-drop-off at that precise,
+    // still-valid boundary point.
+    let commitX=x1, commitY=y1;
+    {
+      let lo=x0, hi=x1;
+      for(let i=0;i<24;i++){
+        const mid=(lo+hi)/2;
+        const sm=getSupportSurface(mid);
+        const stillMine = sm.kind===surf.kind && sm.structureId===surf.structureId;
+        if(stillMine) lo=mid; else hi=mid;
+      }
+      const fc=(hi-x0)/((x1-x0)||1e-9);
+      commitX=hi; commitY=y0+fc*(y1-y0);
+    }
+    const rawMyLineY = getStructureRawY(surf.kind, surf.structureId, commitX);
+    const next = getSupportSurface(commitX);
+    const closeEnough = Math.abs(next.y - rawMyLineY) < 0.05;
+    if(closeEnough){
+      applySeamTransition(obj, surf, angle, next, commitX, commitY);
+      return;
+    }
+    // Genuine drop-off: nothing close enough supports the object at the
+    // point where it actually left this structure — it leaves at its true
+    // exit position/velocity, no forced correction (spec §11). Unlike the
+    // still-within-domain case above, there is no valid "keep going on my
+    // own line" option here — we are already exactly at the edge of where
+    // that line is real.
+    //
+    // One tiny, deliberately negligible adjustment: advance a fraction of
+    // a millisecond further along the current (already fully correct)
+    // velocity before marking airborne. Leaving the object sitting at
+    // EXACTLY the boundary point — precisely on the line shared by this
+    // structure's own hypotenuse and its own back wall — left the very
+    // next collision search finding this same structure again via
+    // floating-point "already touching" self-detection, which could
+    // repeatedly re-land and immediately re-exit without ever making real
+    // (x,y) progress, slowly bleeding speed each time it happened. Moving
+    // fully clear of that single ambiguous point first (a sub-millimeter
+    // step under normal speeds) avoids the ambiguity entirely; it changes
+    // no velocity and is far smaller than the seam-detection tolerance.
+    const nudge=Math.min(dt*0.02, 1e-3);
+    obj.x=commitX+obj.vx*nudge; obj.y=commitY+obj.vy*nudge;
+    obj.onSurface=null; obj.N=0; obj.f=0;
+  }
+
+  // Snaps the object onto `next` at (atX, atY), redirecting its velocity to
+  // the new tangent. An idealized zero-radius seam does no work and the
+  // object's position is exactly continuous through it (both surfaces
+  // genuinely meet at this point — that is what "seam" means), so BOTH
+  // speed and height are preserved exactly: total mechanical energy is
+  // conserved by construction, not approximated. (An earlier version of
+  // this function re-snapped the y-position using the new surface's own
+  // object-offset convention, which differs slightly by tilt for a
+  // square object — that mismatch was a source of small but real energy
+  // jumps at every seam. Position is generally left untouched here.)
+  //
+  // The one exception is landing on GROUND specifically: unlike a ramp,
+  // ground's correct height is a single fixed, always-known constant
+  // (OBJ_SIZE_M/2, i.e. bottomY = 0), so it can be corrected exactly and
+  // safely — this is what keeps "위치 y" and the y-t graph reading a clean
+  // 0 while on the floor instead of a tiny leftover offset from whatever
+  // tilt the object arrived from. The correction still never invents
+  // energy: it's paid for out of existing KE (capped if there isn't
+  // enough, though in practice there always is by the time an object has
+  // slid down to ground level).
+  function applySeamTransition(obj, surf, angle, next, atX, atY){
+    const n2=surfaceNormal(next.angle);
+    const nextHere=getSupportSurface(atX);
+    const speed=Math.hypot(obj.vx,obj.vy);
+    const sgn=Math.sign(obj.vx*Math.cos(next.angle)+obj.vy*Math.sin(next.angle))||1;
+    let vx=speed*sgn*Math.cos(next.angle), vy=speed*sgn*Math.sin(next.angle);
+    let yFinal=atY;
+    if(nextHere.kind==='ground'){
+      const yGround=OBJ_SIZE_M/2;
+      const dy=yGround-atY;
+      const KEold=0.5*speed*speed; // per unit mass
+      let dyApplied=dy, KEnew=KEold;
+      if(dy>0){
+        // With zero gravity, raising the object costs no potential energy
+        // at all, so the correction is always free (no KE cap needed) —
+        // guard the division explicitly rather than relying on dividing by
+        // zero to "happen" to produce Infinity, since if KEold is ALSO
+        // exactly 0 (object at rest) that division becomes 0/0 = NaN,
+        // which would silently corrupt the object's position from then on.
+        const dyMax=GRAVITY>1e-9 ? KEold/GRAVITY : Infinity;
+        dyApplied=Math.min(dy,dyMax);
+        KEnew=KEold-GRAVITY*dyApplied;
+      }
+      const speedNew=KEnew>0?Math.sqrt(2*KEnew):0;
+      vx=speedNew*sgn*Math.cos(next.angle); vy=speedNew*sgn*Math.sin(next.angle);
+      yFinal=atY+dyApplied;
+    }
+    obj.vx=vx; obj.vy=vy;
+    obj.x=atX; obj.y=yFinal;
+    obj.onSurface={nx:n2.nx,ny:n2.ny,angle:next.angle,kind:nextHere.kind,structureId:nextHere.structureId};
+  }
+
+  function subPhysicsStep(obj, dt){
+    if(obj.dragging) return;
+    if(obj.onSurface){
+      slideOnSurface(obj, dt);
+    } else {
+      const {Fx,Fy}=forceComponents(obj);
+      const ax=obj.m>0?Fx/obj.m:0, ay=(obj.m>0?Fy/obj.m:0)-GRAVITY;
+      obj.vx+=ax*dt; obj.vy+=ay*dt; obj.ax=ax; obj.ay=ay;
+      flyFree(obj, dt);
+    }
+  }
+
+  // --- Object-object collision (spec §14-16): normal-relative velocity,
+  // restitution, momentum-conserving impulse; already-separating pairs are
+  // left alone (never re-applied); position correction never touches velocity.
+  function separate2D(A,B,dx,dy,dist,minDist){
+    const overlap=minDist-dist; if(overlap<=0) return;
+    const nx=dx/dist, ny=dy/dist, shift=overlap/2+0.001;
+    A.x-=nx*shift; A.y-=ny*shift; B.x+=nx*shift; B.y+=ny*shift;
+  }
+  function resolveCollision2D(A,B,dx,dy,dist,minDist){
+    const nx=dx/dist, ny=dy/dist;
+    const m1=A.m,m2=B.m,totalM=m1+m2; if(totalM===0) return;
+    const e=Math.min(restitutionFor(A),restitutionFor(B));
+    const pBeforeVec={x:m1*A.vx+m2*B.vx,y:m1*A.vy+m2*B.vy};
+    const v1n=A.vx*nx+A.vy*ny, v2n=B.vx*nx+B.vy*ny;
+    const v1t={x:A.vx-v1n*nx,y:A.vy-v1n*ny}, v2t={x:B.vx-v2n*nx,y:B.vy-v2n*ny};
+    const relN=v1n-v2n;
+    const v1nAfter=v1n-(1+e)*m2*relN/totalM, v2nAfter=v2n+(1+e)*m1*relN/totalM;
+    A.vx=v1t.x+v1nAfter*nx; A.vy=v1t.y+v1nAfter*ny;
+    B.vx=v2t.x+v2nAfter*nx; B.vy=v2t.y+v2nAfter*ny;
+    A.onSurface=null; A.N=0; A.f=0; B.onSurface=null; B.N=0; B.f=0;
+    const pAfterVec={x:m1*A.vx+m2*B.vx,y:m1*A.vy+m2*B.vy};
+    const magBefore=Math.hypot(pBeforeVec.x,pBeforeVec.y), magAfter=Math.hypot(pAfterVec.x,pAfterVec.y);
+    const errPct=magBefore!==0?Math.abs(magAfter-magBefore)/Math.abs(magBefore)*100:Math.abs(magAfter-magBefore)*100;
+    separate2D(A,B,dx,dy,dist,minDist);
+    collisionCount++;
+    const entry={time:simTime, names:A.name+' x '+B.name, pBeforeVec, pAfterVec, err:errPct};
+    collisionLog.unshift(entry); if(collisionLog.length>8) collisionLog.pop();
+    updateCollisionPanel(entry);
+  }
+  // One fixed-dt physics step for every object plus pairwise collisions.
+  // Called from the accumulator loop in tick() — dt is ALWAYS PHYSICS_DT,
+  // never a variable render-frame delta, so results are independent of FPS.
+  function physicsStepOnce(dt){
+    objects.forEach(obj=>subPhysicsStep(obj,dt));
+    if(objCollisionOff) return;
+    for(let i=0;i<objects.length;i++){
+      for(let j=i+1;j<objects.length;j++){
+        const A=objects[i], B=objects[j];
+        const dx=B.x-A.x, dy=B.y-A.y, dist=Math.hypot(dx,dy)||1e-6;
+        const minDist=OBJ_SIZE_M;
+        if(dist<minDist){
+          const relVx=B.vx-A.vx, relVy=B.vy-A.vy;
+          const closingSpeed=-(relVx*dx+relVy*dy)/dist;
+          if(closingSpeed>1e-6) resolveCollision2D(A,B,dx,dy,dist,minDist);
+          else separate2D(A,B,dx,dy,dist,minDist);
+        }
+      }
+    }
+  }
+  function updateCollisionPanel(entry){
+    collisionEmpty.classList.add('hidden'); collisionDetail.classList.remove('hidden');
+    collCountEl.textContent=collisionCount;
+    pxBeforeEl.textContent=entry.pBeforeVec.x.toFixed(2); pxAfterEl.textContent=entry.pAfterVec.x.toFixed(2);
+    pyBeforeEl.textContent=entry.pBeforeVec.y.toFixed(2); pyAfterEl.textContent=entry.pAfterVec.y.toFixed(2);
+    pMagBeforeEl.textContent=Math.hypot(entry.pBeforeVec.x,entry.pBeforeVec.y).toFixed(2);
+    pMagAfterEl.textContent=Math.hypot(entry.pAfterVec.x,entry.pAfterVec.y).toFixed(2);
+    pErrorEl.textContent=entry.err.toFixed(3)+'%';
+    collisionNote.textContent='최근 충돌: '+entry.names+' (t='+entry.time.toFixed(2)+'s)';
+    collisionLogEl.innerHTML='';
+    collisionLog.forEach(e=>{
+      const div=document.createElement('div');
+      div.textContent='t='+e.time.toFixed(2)+'s  '+e.names+'  |  Px:'+e.pBeforeVec.x.toFixed(2)+' -> '+e.pAfterVec.x.toFixed(2)+'  Py:'+e.pBeforeVec.y.toFixed(2)+' -> '+e.pAfterVec.y.toFixed(2)+'  err='+e.err.toFixed(3)+'%';
+      collisionLogEl.appendChild(div);
+    });
+  }
+  function resetCollisionPanel(){
+    collisionCount=0; collCountEl.textContent='0';
+    collisionEmpty.classList.remove('hidden'); collisionDetail.classList.add('hidden'); collisionLogEl.innerHTML='';
+  }
+
+  function recordHistory(){
+    objects.forEach(obj=>{
+      const h=history[obj.id]; if(!h) return;
+      const {Fx,Fy}=forceComponents(obj);
+      const vMag=Math.hypot(obj.vx,obj.vy), aMag=Math.hypot(obj.ax,obj.ay);
+      const Fnetx=obj.m*obj.ax, Fnety=obj.m*obj.ay, FnetMag=Math.hypot(Fnetx,Fnety);
+      const K=0.5*obj.m*vMag*vMag, Ug=obj.m*GRAVITY*obj.y, E=K+Ug;
+      const Jx=obj.m*obj.vx-obj.p0x, Jy=obj.m*obj.vy-obj.p0y, J=Math.hypot(Jx,Jy);
+      h.t.push(simTime); h.x.push(obj.x); h.y.push(bottomY(obj));
+      h.vx.push(obj.vx); h.vy.push(obj.vy); h.vMag.push(vMag);
+      h.ax.push(obj.ax); h.ay.push(obj.ay); h.aMag.push(aMag);
+      h.Fx.push(Fx); h.Fy.push(Fy);
+      h.Fnetx.push(Fnetx); h.Fnety.push(Fnety); h.FnetMag.push(FnetMag);
+      h.px.push(obj.m*obj.vx); h.py.push(obj.m*obj.vy);
+      h.N.push(obj.N||0); h.f.push(obj.f||0);
+      h.K.push(K); h.Ug.push(Ug); h.E.push(E);
+      h.Jx.push(Jx); h.J.push(J);
+      const cutoff=simTime-GRAPH_WINDOW-2;
+      if(h.t.length>2 && h.t[0]<cutoff){ Object.keys(h).forEach(k=>{ while(h[k].length>2 && h.t[0]<cutoff) h[k].shift(); }); }
+    });
+  }
+  function clearHistories(){
+    objects.forEach(obj=>{ history[obj.id]=emptyHistory(); obj.p0x=obj.m*obj.vx; obj.p0y=obj.m*obj.vy; });
+    collisionLog=[]; resetCollisionPanel();
+  }
+
+  function describeMotion(obj){
+    const vMag=Math.hypot(obj.vx,obj.vy);
+    if(vMag<0.05) return {arrow:'.',dir:'정지'};
+    const ang=Math.atan2(obj.vy,obj.vx)*180/Math.PI;
+    let arrow,dir;
+    if(ang>-22.5&&ang<=22.5){arrow='->';dir='오른쪽';}
+    else if(ang>22.5&&ang<=67.5){arrow='/^';dir='오른쪽 위';}
+    else if(ang>67.5&&ang<=112.5){arrow='^';dir='위';}
+    else if(ang>112.5&&ang<=157.5){arrow='^\\';dir='왼쪽 위';}
+    else if(ang>157.5||ang<=-157.5){arrow='<-';dir='왼쪽';}
+    else if(ang>-157.5&&ang<=-112.5){arrow='\\v';dir='왼쪽 아래';}
+    else if(ang>-112.5&&ang<=-67.5){arrow='v';dir='아래';}
+    else {arrow='v/';dir='오른쪽 아래';}
+    const dot=obj.vx*obj.ax+obj.vy*obj.ay;
+    const state=Math.abs(dot)<0.02?'등속으로':(dot>0?'가속하며':'감속하며');
+    return {arrow,dir,state,vMag};
+  }
+  function refreshInfoTable(){
+    infoTableBody.innerHTML=''; motionStatus.innerHTML='';
+    objects.forEach(obj=>{
+      const aMag=Math.hypot(obj.ax,obj.ay), vMag=Math.hypot(obj.vx,obj.vy);
+      const {Fx:activeFx,Fy:activeFy}=forceComponents(obj);
+      const activeF=Math.hypot(activeFx,activeFy);
+      const tr=document.createElement('tr');
+      tr.innerHTML='<td class="obj-name"><span class="dot" style="background:'+obj.color+'"></span>'+obj.name+'</td>'+
+        '<td>'+obj.m.toFixed(2)+'</td>'+'<td>'+activeF.toFixed(2)+'</td>'+'<td>'+round2(obj.theta)+'</td>'+
+        '<td>'+aMag.toFixed(2)+'</td>'+'<td>'+vMag.toFixed(2)+'</td>'+'<td>'+obj.x.toFixed(2)+'</td>'+'<td>'+bottomY(obj).toFixed(2)+'</td>';
+      infoTableBody.appendChild(tr);
+      const md=describeMotion(obj);
+      const row=document.createElement('div'); row.className='motion-row';
+      const arrowSpan=document.createElement('span'); arrowSpan.className='arrow'; arrowSpan.textContent=md.arrow;
+      const descSpan=document.createElement('span'); descSpan.className='desc';
+      descSpan.innerHTML='<span class="dot" style="background:'+obj.color+'"></span>'+obj.name+': '+(md.dir==='정지'?'정지 상태':md.dir+'으로 '+md.state+' 이동 중');
+      const valsSpan=document.createElement('span'); valsSpan.className='vals';
+      valsSpan.textContent='F='+activeF.toFixed(1)+'N  m='+obj.m.toFixed(1)+'kg  |a|='+aMag.toFixed(2)+'m/s2  |v|='+vMag.toFixed(2)+'m/s';
+      row.appendChild(arrowSpan); row.appendChild(descSpan); row.appendChild(valsSpan);
+      motionStatus.appendChild(row);
+    });
+  }
+
+  function fitCanvas(canvas){
+    const rect=canvas.getBoundingClientRect(), dpr=window.devicePixelRatio||1;
+    canvas.width=Math.max(1,Math.round(rect.width*dpr)); canvas.height=Math.max(1,Math.round(rect.height*dpr));
+    const ctx=canvas.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
+    return {w:rect.width,h:rect.height};
+  }
+  function worldToScreen(x,y,geom){ return {sx:(x-geom.originX)*geom.scale, sy:geom.floorY-y*geom.scale}; }
+  function screenToWorld(sx,sy,geom){ return {x:sx/geom.scale+geom.originX, y:(geom.floorY-sy)/geom.scale}; }
+  function isOffscreen(obj){
+    const half=OBJ_SIZE_M/2;
+    if(obj.x+half<originX-viewRangeX()*2 || obj.x-half>originX+viewRangeX()*3) return true;
+    if(obj.y-half>viewRangeY()*4+50) return true;
+    if(obj.y+half<-50) return true;
+    return false;
+  }
+
+  function renderSim(){
+    const dims=fitCanvas(simCanvas), ctx=simCtx;
+    ctx.clearRect(0,0,dims.w,dims.h);
+    const floorY=dims.h-40;
+    const vrX=viewRangeX();
+    // Scale is always derived from WIDTH alone, so the visible horizontal
+    // range is always exactly vrX meters — identical whether the canvas is
+    // shown normally or in fullscreen. Deriving it from Math.min(width,
+    // height) instead (to also try to fit vrY) meant that whenever
+    // fullscreen changed the canvas's aspect ratio (its height typically
+    // grows much more than its width does), the height constraint could
+    // become the binding one, inflating the scale and silently shrinking
+    // the horizontal range actually shown — e.g. a view that showed x up
+    // to 200 normally would show only up to ~100 in fullscreen, even
+    // though nothing about the configured view range had changed.
+    const scale=dims.w/vrX;
+    const geom={dims,scale,floorY,originX}; lastGeom=geom;
+    const visMetersX=dims.w/scale, visMetersY=floorY/scale;
+    ctx.strokeStyle='#141c28'; ctx.lineWidth=1;
+    const xStart=Math.floor(originX/gridSpacing)*gridSpacing;
+    for(let m=xStart;m<=originX+visMetersX+gridSpacing;m+=gridSpacing){ const p=worldToScreen(m,0,geom); ctx.beginPath();ctx.moveTo(p.sx,0);ctx.lineTo(p.sx,floorY);ctx.stroke(); }
+    for(let vy=0;vy<=visMetersY;vy+=vGridSpacing){ const p=worldToScreen(0,vy,geom); ctx.beginPath();ctx.moveTo(0,p.sy);ctx.lineTo(dims.w,p.sy);ctx.stroke(); }
+    ctx.strokeStyle='#2a3644'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(0,floorY); ctx.lineTo(dims.w,floorY); ctx.stroke();
+    ctx.fillStyle='#4a5a6e'; ctx.font='10px monospace'; ctx.textAlign='center';
+    for(let m=xStart;m<=originX+visMetersX+gridSpacing;m+=gridSpacing){
+      const p=worldToScreen(m,0,geom);
+      ctx.strokeStyle=Math.abs(m)<1e-9?'#4fd1ff55':'#2a3644';
+      ctx.beginPath(); ctx.moveTo(p.sx,floorY-6); ctx.lineTo(p.sx,floorY+6); ctx.stroke();
+      ctx.fillText(Math.round(m)+'m', p.sx, floorY+20);
+    }
+    ctx.textAlign='left';
+    for(let vy=0;vy<=visMetersY;vy+=vGridSpacing){ const p=worldToScreen(0,vy,geom); ctx.fillStyle='#4a5a6e'; ctx.fillText(Math.round(vy)+'m',4,p.sy-3); }
+
+    structures.forEach(s=>{
+      if(s.type==='ramp'){
+        const p1=worldToScreen(s.x1,s.yBase,geom), p2=worldToScreen(s.x2,s.yBase,geom), p3=worldToScreen(s.x2,s.yBase+s.height,geom);
+        ctx.fillStyle='rgba(169,122,74,0.45)';
+        ctx.beginPath(); ctx.moveTo(p1.sx,p1.sy); ctx.lineTo(p2.sx,p2.sy); ctx.lineTo(p3.sx,p3.sy); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle=STRUCT_LINE_COLOR; ctx.lineWidth=STRUCT_LINE_WIDTH; ctx.lineCap='round';
+        ctx.beginPath(); ctx.moveTo(p1.sx,p1.sy); ctx.lineTo(p3.sx,p3.sy); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(p2.sx,p2.sy); ctx.lineTo(p3.sx,p3.sy); ctx.stroke();
+        if(s.yBase>0.01){ ctx.setLineDash([3,3]); ctx.strokeStyle='#3a4a5c'; ctx.beginPath(); ctx.moveTo(p2.sx,p2.sy); ctx.lineTo(p2.sx,floorY); ctx.stroke(); ctx.setLineDash([]); }
+      } else if(s.type==='hline'){
+        const p1=worldToScreen(s.x,s.y,geom), p2=worldToScreen(s.x+s.length,s.y,geom);
+        ctx.strokeStyle=STRUCT_LINE_COLOR; ctx.lineWidth=STRUCT_LINE_WIDTH; ctx.lineCap='round';
+        ctx.beginPath(); ctx.moveTo(p1.sx,p1.sy); ctx.lineTo(p2.sx,p2.sy); ctx.stroke();
+      } else if(s.type==='vline'){
+        const p1=worldToScreen(s.x,s.yBottom,geom), p2=worldToScreen(s.x,s.yBottom+s.length,geom);
+        ctx.strokeStyle=STRUCT_LINE_COLOR; ctx.lineWidth=STRUCT_LINE_WIDTH; ctx.lineCap='round';
+        ctx.beginPath(); ctx.moveTo(p1.sx,p1.sy); ctx.lineTo(p2.sx,p2.sy); ctx.stroke();
+      }
+      frictionZones.filter(z=>z.kind==='structure'&&z.structureId===s.id).forEach(z=>drawZoneOnStructure(ctx,s,z,geom));
+    });
+    frictionZones.filter(z=>z.kind==='ground').forEach(z=>{
+      const p1=worldToScreen(z.x1,0,geom), p2=worldToScreen(z.x2,0,geom);
+      ctx.strokeStyle='rgba(255,90,95,0.8)'; ctx.lineWidth=5; ctx.lineCap='round';
+      ctx.beginPath(); ctx.moveTo(p1.sx,p1.sy); ctx.lineTo(p2.sx,p2.sy); ctx.stroke();
+    });
+    if(interactionMode==='zone' && zonePending){
+      const p=worldToScreen(zonePending.x, getSupportSurface(zonePending.x).y, geom);
+      ctx.fillStyle='#ff5a5f'; ctx.beginPath(); ctx.arc(p.sx,p.sy,5,0,Math.PI*2); ctx.fill();
+    }
+    objects.forEach(obj=>{
+      const wPx=OBJ_SIZE_M*scale, hPx=wPx;
+      const c=worldToScreen(obj.x,obj.y,geom);
+      const angle=currentTiltAngle(obj);
+      const thetaRad=obj.theta*Math.PI/180;
+      const edgeOffset=wPx*0.6;
+      if(obj.showVectors){
+        if(showVelVec){
+          const vMag=Math.hypot(obj.vx,obj.vy);
+          if(vMag>1e-6) drawArrowAngled(ctx,c.sx,c.sy,vMag,Math.atan2(obj.vy,obj.vx),'#60a5fa',4,edgeOffset,showLabels?('속도 v='+vMag.toFixed(2)+'m/s'):'');
+        }
+        if(showNormalVec && obj.onSurface && obj.N>1e-6){
+          drawArrowAngled(ctx,c.sx,c.sy,obj.N,Math.atan2(obj.onSurface.ny,obj.onSurface.nx),'#f59e0b',1.6,edgeOffset,showLabels?('수직항력 N='+obj.N.toFixed(1)+'N'):'');
+        }
+        {
+          const {Fx:activeFx,Fy:activeFy}=forceComponents(obj);
+          const activeF=Math.hypot(activeFx,activeFy);
+          if(activeF>1e-6) drawArrowAngled(ctx,c.sx,c.sy,activeF,Math.atan2(activeFy,activeFx),'#ff5a5f',1.6,edgeOffset,showLabels?('F='+activeF.toFixed(1)+'N theta='+round2(obj.theta)):'');
+        }
+        const fnetMag=Math.hypot(obj.m*obj.ax,obj.m*obj.ay);
+        if(fnetMag>1e-6) drawArrowAngled(ctx,c.sx,c.sy,fnetMag,Math.atan2(obj.ay,obj.ax),'#34d399',1.6,edgeOffset,showLabels?('알짜힘='+fnetMag.toFixed(1)+'N'):'');
+      }
+      ctx.save(); ctx.translate(c.sx,c.sy); ctx.rotate(-angle);
+      ctx.shadowColor=obj.color; ctx.shadowBlur=14; ctx.fillStyle=obj.color;
+      roundRect(ctx,-wPx/2,-hPx/2,wPx,hPx,6); ctx.fill();
+      ctx.shadowBlur=0; ctx.fillStyle='#0a0e14'; ctx.font='bold 13px monospace';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(obj.name.replace('물체 ','#'),0,0);
+      ctx.restore();
+    });
+    simClock.textContent=simTime.toFixed(2);
+  }
+  function drawZoneOnStructure(ctx,s,z,geom){
+    if(s.type!=='ramp') return;
+    const t1=(z.x1-s.x1)/(s.x2-s.x1||1e-6), t2=(z.x2-s.x1)/(s.x2-s.x1||1e-6);
+    const p1=worldToScreen(s.x1+t1*(s.x2-s.x1), s.yBase+t1*s.height, geom), p2=worldToScreen(s.x1+t2*(s.x2-s.x1), s.yBase+t2*s.height, geom);
+    ctx.strokeStyle='rgba(255,90,95,0.8)'; ctx.lineWidth=8; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(p1.sx,p1.sy); ctx.lineTo(p2.sx,p2.sy); ctx.stroke();
+  }
+  function roundRect(ctx,x,y,w,h,r){
+    ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+  }
+  function drawArrowAngled(ctx,cx,cy,magnitude,angleRad,color,pxPerUnit,startOffset,label){
+    if(Math.abs(magnitude)<1e-6) return;
+    const len=Math.max(0,Math.min(160,Math.abs(magnitude)*pxPerUnit));
+    const sgn=magnitude<0?-1:1;
+    const dx=Math.cos(angleRad)*sgn, dy=-Math.sin(angleRad)*sgn;
+    const x0=cx+dx*startOffset, y0=cy+dy*startOffset, x1=x0+dx*len, y1=y0+dy*len;
+    ctx.strokeStyle=color; ctx.fillStyle=color; ctx.lineWidth=2.5;
+    ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke();
+    const headAng=Math.atan2(y1-y0,x1-x0);
+    ctx.beginPath(); ctx.moveTo(x1,y1);
+    ctx.lineTo(x1-8*Math.cos(headAng-0.4), y1-8*Math.sin(headAng-0.4));
+    ctx.lineTo(x1-8*Math.cos(headAng+0.4), y1-8*Math.sin(headAng+0.4));
+    ctx.closePath(); ctx.fill();
+    if(label && showLabels){ ctx.font='10px monospace'; ctx.textAlign='left'; ctx.fillText(label,x1+6,y1); ctx.textAlign='center'; }
+  }
+
+  function niceStep(range,targetCount){
+    if(range<=0||!isFinite(range)) return 1;
+    const rough=range/Math.max(1,targetCount), mag=Math.pow(10,Math.floor(Math.log10(rough))), norm=rough/mag;
+    let nn; if(norm<1.5) nn=1; else if(norm<3) nn=2; else if(norm<7) nn=5; else nn=10;
+    return Math.max(1,Math.round(nn*mag));
+  }
+  function makeTicks(min,max,userStep,targetCount){
+    let step=(userStep&&userStep>0)?Math.max(1,Math.round(userStep)):niceStep(max-min,targetCount);
+    const estCount=(max-min)/step;
+    if(!isFinite(estCount)||estCount>30) step=niceStep(max-min,targetCount);
+    const ticks=[]; let v=Math.ceil(min/step-1e-9)*step, guard=0;
+    while(v<=max+1e-9 && guard<30){ ticks.push(v); v+=step; guard++; }
+    if(ticks.length===0) ticks.push(Math.round(min));
+    return ticks;
+  }
+  function computeRange(key,isTime,hiddenIds){
+    if(isTime){ const tMax=Math.max(simTime,1); return [Math.max(0,tMax-GRAPH_WINDOW), tMax]; }
+    let mn,mx,has=false;
+    objects.forEach(obj=>{ if(hiddenIds&&hiddenIds.has(obj.id)) return; const h=history[obj.id]; if(!h) return; h[key].forEach(v=>{ if(!has){mn=v;mx=v;has=true;} if(v<mn)mn=v; if(v>mx)mx=v; }); });
+    if(!has){ mn=-1; mx=1; } if(mn===mx){ mn-=1; mx+=1; }
+    const pad=(mx-mn)*0.1; return [mn-pad,mx+pad];
+  }
+  function renderGraph(g){
+    const dims=fitCanvas(g.canvas), ctx=g.ctx;
+    ctx.clearRect(0,0,dims.w,dims.h);
+    const padL=44,padR=12,padT=10,padB=22, plotW=dims.w-padL-padR, plotH=dims.h-padT-padB;
+    const hidden=g.hiddenIds||new Set();
+    const xr=computeRange(g.xKey,g.xKey==='t',hidden), xMin=xr[0], xMax=xr[1];
+    let yMin,yMax,hasY=false;
+    objects.forEach(obj=>{
+      if(hidden.has(obj.id)) return;
+      const h=history[obj.id]; if(!h) return;
+      for(let i=0;i<h.t.length;i++){
+        if(g.xKey==='t'&&h.t[i]<xMin) continue;
+        const val=h[g.yKey][i];
+        if(!hasY){yMin=val;yMax=val;hasY=true;} if(val<yMin)yMin=val; if(val>yMax)yMax=val;
+      }
+    });
+    if(!hasY){ yMin=-1; yMax=1; } if(yMin===yMax){ yMin-=1; yMax+=1; }
+    const padY=(yMax-yMin)*0.15; yMin-=padY; yMax+=padY;
+    if(yMin>0 && g.yKey!=='x' && g.yKey!=='y') yMin=Math.min(yMin,-0.1);
+    if(yMax<0) yMax=Math.max(yMax,0.1);
+    function px(v){ return padL+((v-xMin)/((xMax-xMin)||1))*plotW; }
+    function py(v){ return padT+plotH-((v-yMin)/((yMax-yMin)||1))*plotH; }
+    g.lastGeom={xMin,xMax,yMin,yMax,padL,padR,padT,padB,dims};
+    ctx.font='10px monospace';
+    makeTicks(yMin,yMax,g.yStep,4).forEach(v=>{ const y=py(v); ctx.strokeStyle='#141c28'; ctx.beginPath();ctx.moveTo(padL,y);ctx.lineTo(dims.w-padR,y);ctx.stroke(); ctx.fillStyle='#7c8ba1'; ctx.textAlign='right'; ctx.fillText(String(Math.round(v)),padL-6,y+3); });
+    makeTicks(xMin,xMax,g.xStep,4).forEach(v=>{ const x=px(v); ctx.strokeStyle='#141c28'; ctx.beginPath();ctx.moveTo(x,padT);ctx.lineTo(x,dims.h-padB);ctx.stroke(); ctx.fillStyle='#7c8ba1'; ctx.textAlign='center'; ctx.fillText(g.xKey==='t'?Math.round(v)+'s':String(Math.round(v)),x,dims.h-6); });
+    if(xMin<0 && xMax>0){ ctx.strokeStyle='#33475c'; ctx.beginPath(); ctx.moveTo(px(0),padT); ctx.lineTo(px(0),dims.h-padB); ctx.stroke(); }
+    if(yMin<0 && yMax>0){ ctx.strokeStyle='#33475c'; ctx.beginPath(); ctx.moveTo(padL,py(0)); ctx.lineTo(dims.w-padR,py(0)); ctx.stroke(); }
+    objects.forEach(obj=>{
+      if(hidden.has(obj.id)) return;
+      const h=history[obj.id]; if(!h||h.t.length<2) return;
+      ctx.strokeStyle=obj.color; ctx.lineWidth=2; ctx.beginPath(); let started=false;
+      let maxI=-1, maxV=-Infinity, minI=-1, minV=Infinity;
+      for(let i=0;i<h.t.length;i++){
+        if(g.xKey==='t'&&h.t[i]<xMin) continue;
+        const x=px(h[g.xKey][i]), y=py(h[g.yKey][i]);
+        if(!started){ ctx.moveTo(x,y); started=true; } else ctx.lineTo(x,y);
+        const v=h[g.yKey][i];
+        if(v>maxV){ maxV=v; maxI=i; }
+        if(v<minV){ minV=v; minI=i; }
+      }
+      ctx.stroke();
+      function markPoint(idx, tag){
+        if(idx<0) return;
+        const px_=px(h[g.xKey][idx]), py_=py(h[g.yKey][idx]);
+        ctx.fillStyle=obj.color; ctx.beginPath(); ctx.arc(px_,py_,5,0,Math.PI*2); ctx.fill();
+        ctx.strokeStyle='#0a0e14'; ctx.lineWidth=1.5; ctx.stroke();
+        if(g.isZoom){
+          const label=tag+' '+obj.name+'  x='+h[g.xKey][idx].toFixed(2)+' y='+h[g.yKey][idx].toFixed(2);
+          ctx.font='11px monospace';
+          const tw=ctx.measureText(label).width;
+          let bx=px_+8; if(bx+tw+10>dims.w) bx=px_-tw-18;
+          let by=py_-10; if(tag==='최저') by=py_+18;
+          if(by<14) by=14; if(by>dims.h-6) by=dims.h-6;
+          ctx.fillStyle='rgba(10,14,20,0.92)'; ctx.strokeStyle=obj.color; ctx.lineWidth=1;
+          ctx.fillRect(bx-5,by-12,tw+10,18); ctx.strokeRect(bx-5,by-12,tw+10,18);
+          ctx.fillStyle='#e7edf5'; ctx.textAlign='left'; ctx.fillText(label,bx,by+2); ctx.textAlign='center';
+        }
+      }
+      markPoint(maxI,'최고'); markPoint(minI,'최저');
+    });
+    if(g.hover) drawHoverTooltip(ctx,g.hover,px,py,dims);
+  }
+  function drawHoverTooltip(ctx,hover,px,py,dims){
+    const hx=px(hover.xv), hy=py(hover.yv);
+    ctx.fillStyle=hover.color; ctx.beginPath(); ctx.arc(hx,hy,4,0,Math.PI*2); ctx.fill();
+    const text=hover.name+'  x='+hover.xv.toFixed(2)+'  y='+hover.yv.toFixed(2);
+    ctx.font='11px monospace'; const tw=ctx.measureText(text).width;
+    let bx=hx+10; if(bx+tw+10>dims.w) bx=hx-tw-20;
+    let by=hy-14; if(by<4) by=hy+10;
+    ctx.fillStyle='rgba(10,14,20,0.92)'; ctx.strokeStyle=hover.color; ctx.lineWidth=1;
+    ctx.fillRect(bx-6,by-12,tw+12,20); ctx.strokeRect(bx-6,by-12,tw+12,20);
+    ctx.fillStyle='#e7edf5'; ctx.textAlign='left'; ctx.fillText(text,bx,by+3); ctx.textAlign='center';
+  }
+  function findHoverPoint(g,mx,my){
+    if(!g.lastGeom) return null;
+    const gm=g.lastGeom, xMin=gm.xMin,xMax=gm.xMax,yMin=gm.yMin,yMax=gm.yMax,padL=gm.padL,padR=gm.padR,padT=gm.padT,padB=gm.padB,dims=gm.dims;
+    const plotW=dims.w-padL-padR, plotH=dims.h-padT-padB;
+    function px(v){ return padL+((v-xMin)/((xMax-xMin)||1))*plotW; }
+    function py(v){ return padT+plotH-((v-yMin)/((yMax-yMin)||1))*plotH; }
+    let best=null, bestDist=18;
+    const hidden=g.hiddenIds||new Set();
+    objects.forEach(obj=>{
+      if(hidden.has(obj.id)) return;
+      const h=history[obj.id]; if(!h) return;
+      for(let i=0;i<h.t.length;i++){
+        if(g.xKey==='t'&&h.t[i]<xMin) continue;
+        const x=px(h[g.xKey][i]), y=py(h[g.yKey][i]), d=Math.hypot(x-mx,y-my);
+        if(d<bestDist){ bestDist=d; best={xv:h[g.xKey][i], yv:h[g.yKey][i], name:obj.name, color:obj.color}; }
+      }
+    });
+    return best;
+  }
+  function attachGraphInteraction(g){
+    g.canvas.addEventListener('mousemove', evt=>{ const rect=g.canvas.getBoundingClientRect(); g.hover=findHoverPoint(g, evt.clientX-rect.left, evt.clientY-rect.top); });
+    g.canvas.addEventListener('mouseleave', ()=>{ g.hover=null; });
+  }
+  function buildGraphDOM(g){
+    const box=document.createElement('div'); box.className='graph-box'; box.dataset.graphId=g.id;
+    const head=document.createElement('div'); head.className='graph-box-head';
+    const h3=document.createElement('h3'); h3.textContent=g.name; head.appendChild(h3);
+    const ctrls=document.createElement('div'); ctrls.className='graph-box-controls';
+    const xStepInput=document.createElement('input'); xStepInput.type='number'; xStepInput.step='1'; xStepInput.min='0'; xStepInput.placeholder='X간격'; xStepInput.value=g.xStep||'';
+    xStepInput.addEventListener('input', ()=>{ const v=parseFloat(xStepInput.value); g.xStep=(!isNaN(v)&&v>0)?v:0; });
+    const yStepInput=document.createElement('input'); yStepInput.type='number'; yStepInput.step='1'; yStepInput.min='0'; yStepInput.placeholder='Y간격'; yStepInput.value=g.yStep||'';
+    yStepInput.addEventListener('input', ()=>{ const v=parseFloat(yStepInput.value); g.yStep=(!isNaN(v)&&v>0)?v:0; });
+    ctrls.appendChild(xStepInput); ctrls.appendChild(yStepInput);
+    const zoomBtn=document.createElement('button'); zoomBtn.className='zoom-graph-btn'; zoomBtn.textContent='확대'; zoomBtn.addEventListener('click', ()=>openGraphZoom(g)); ctrls.appendChild(zoomBtn);
+    if(g.deletable){ const del=document.createElement('button'); del.className='del-graph-btn'; del.textContent='삭제'; del.addEventListener('click', ()=>{ graphs=graphs.filter(x=>x.id!==g.id); box.remove(); }); ctrls.appendChild(del); }
+    head.appendChild(ctrls); box.appendChild(head);
+    const canvas=document.createElement('canvas'); box.appendChild(canvas);
+    const legend=document.createElement('div'); legend.className='legend'; box.appendChild(legend);
+    const lookupRow=document.createElement('div'); lookupRow.className='lookup-row';
+    const xLabel=document.createElement('span'); xLabel.textContent='X='+(AXIS_LABELS[g.xKey]||g.xKey).split(' ')[0]+' 값 입력:';
+    const xInput=document.createElement('input'); xInput.type='number'; xInput.step='any';
+    const lookupBtn=document.createElement('button'); lookupBtn.textContent='Y값 찾기';
+    const resultDiv=document.createElement('div'); resultDiv.className='lookup-result';
+    lookupBtn.addEventListener('click', ()=>{ const xv=parseFloat(xInput.value); if(isNaN(xv)){ resultDiv.textContent='숫자를 입력하세요.'; return; } resultDiv.innerHTML=lookupYForX(g,xv); });
+    lookupRow.appendChild(xLabel); lookupRow.appendChild(xInput); lookupRow.appendChild(lookupBtn);
+    const lookupRow2=document.createElement('div'); lookupRow2.className='lookup-row';
+    const yLabel=document.createElement('span'); yLabel.textContent='Y='+(AXIS_LABELS[g.yKey]||g.yKey).split(' ')[0]+' 값 입력:';
+    const yInput=document.createElement('input'); yInput.type='number'; yInput.step='any';
+    const lookupBtn2=document.createElement('button'); lookupBtn2.textContent='X값 찾기';
+    const resultDiv2=document.createElement('div'); resultDiv2.className='lookup-result';
+    lookupBtn2.addEventListener('click', ()=>{ const yv=parseFloat(yInput.value); if(isNaN(yv)){ resultDiv2.textContent='숫자를 입력하세요.'; return; } resultDiv2.innerHTML=lookupXForY(g,yv); });
+    lookupRow2.appendChild(yLabel); lookupRow2.appendChild(yInput); lookupRow2.appendChild(lookupBtn2);
+    box.appendChild(lookupRow); box.appendChild(resultDiv);
+    box.appendChild(lookupRow2); box.appendChild(resultDiv2);
+    graphsGrid.appendChild(box);
+    g.canvas=canvas; g.ctx=canvas.getContext('2d'); g.legend=legend; g.hover=null; g.lastGeom=null; g.hiddenIds=g.hiddenIds||new Set();
+    attachGraphInteraction(g);
+  }
+  function lookupYForX(g,xv){
+    const hidden=g.hiddenIds||new Set(); let lines=[];
+    objects.forEach(obj=>{
+      if(hidden.has(obj.id)) return;
+      const h=history[obj.id]; if(!h||h.t.length===0) return;
+      let bestI=0,bestD=Infinity;
+      for(let i=0;i<h.t.length;i++){ const d=Math.abs(h[g.xKey][i]-xv); if(d<bestD){ bestD=d; bestI=i; } }
+      lines.push(obj.name+': '+h[g.yKey][bestI].toFixed(3));
+    });
+    return lines.length?lines.join('<br>'):'표시된 데이터가 없습니다.';
+  }
+  function lookupXForY(g,yv){
+    const hidden=g.hiddenIds||new Set(); let lines=[];
+    objects.forEach(obj=>{
+      if(hidden.has(obj.id)) return;
+      const h=history[obj.id]; if(!h||h.t.length===0) return;
+      let bestI=0,bestD=Infinity;
+      for(let i=0;i<h.t.length;i++){ const d=Math.abs(h[g.yKey][i]-yv); if(d<bestD){ bestD=d; bestI=i; } }
+      lines.push(obj.name+': '+h[g.xKey][bestI].toFixed(3));
+    });
+    return lines.length?lines.join('<br>'):'표시된 데이터가 없습니다.';
+  }
+  function openGraphZoom(g){
+    zoomedGraphId=g.id; graphZoomTitle.textContent=g.name; graphZoomModal.classList.remove('hidden');
+    zoomLookupRow.innerHTML='';
+    const xLabel=document.createElement('span'); xLabel.textContent='X 값 입력:';
+    const xInput=document.createElement('input'); xInput.type='number'; xInput.step='any';
+    const lookupBtn=document.createElement('button'); lookupBtn.textContent='Y값 찾기';
+    const resultDiv=document.createElement('div'); resultDiv.className='lookup-result'; resultDiv.style.width='100%';
+    lookupBtn.addEventListener('click', ()=>{ const zg=graphs.find(x=>x.id===zoomedGraphId); if(!zg) return; const xv=parseFloat(xInput.value); if(isNaN(xv)){ resultDiv.textContent='숫자를 입력하세요.'; return; } resultDiv.innerHTML=lookupYForX(zg,xv); });
+    const yLabel=document.createElement('span'); yLabel.textContent='Y 값 입력:';
+    const yInput=document.createElement('input'); yInput.type='number'; yInput.step='any';
+    const lookupBtn2=document.createElement('button'); lookupBtn2.textContent='X값 찾기';
+    const resultDiv2=document.createElement('div'); resultDiv2.className='lookup-result'; resultDiv2.style.width='100%';
+    lookupBtn2.addEventListener('click', ()=>{ const zg=graphs.find(x=>x.id===zoomedGraphId); if(!zg) return; const yv=parseFloat(yInput.value); if(isNaN(yv)){ resultDiv2.textContent='숫자를 입력하세요.'; return; } resultDiv2.innerHTML=lookupXForY(zg,yv); });
+    zoomLookupRow.appendChild(xLabel); zoomLookupRow.appendChild(xInput); zoomLookupRow.appendChild(lookupBtn); zoomLookupRow.appendChild(resultDiv);
+    zoomLookupRow.appendChild(yLabel); zoomLookupRow.appendChild(yInput); zoomLookupRow.appendChild(lookupBtn2); zoomLookupRow.appendChild(resultDiv2);
+  }
+  let zoomLastGeom=null, zoomHover=null;
+  graphZoomCanvas.addEventListener('mousemove', evt=>{
+    const zg=graphs.find(g=>g.id===zoomedGraphId); if(!zg||!zoomLastGeom) return;
+    const rect=graphZoomCanvas.getBoundingClientRect();
+    zoomHover = findHoverPoint({xKey:zg.xKey,yKey:zg.yKey,hiddenIds:zg.hiddenIds,lastGeom:zoomLastGeom}, evt.clientX-rect.left, evt.clientY-rect.top);
+  });
+  graphZoomCanvas.addEventListener('mouseleave', ()=>{ zoomHover=null; });
+
+  function addGraph(xKey,yKey,name,deletable,xStep,yStep){
+    const g={ id:graphIdCounter++, xKey,yKey, name:name||((AXIS_LABELS[yKey]||yKey)+' vs '+(AXIS_LABELS[xKey]||xKey)), deletable, xStep:xStep||0, yStep:yStep||0, hiddenIds:new Set() };
+    graphs.push(g); buildGraphDOM(g); renderLegendFor(g);
+    return g;
+  }
+  function renderLegendFor(g){
+    g.legend.innerHTML='';
+    objects.forEach(obj=>{
+      const span=document.createElement('span');
+      if(g.hiddenIds.has(obj.id)) span.classList.add('off');
+      span.innerHTML='<span class="dot" style="background:'+obj.color+'"></span>'+obj.name;
+      span.addEventListener('click', ()=>{ if(g.hiddenIds.has(obj.id)) g.hiddenIds.delete(obj.id); else g.hiddenIds.add(obj.id); span.classList.toggle('off'); });
+      g.legend.appendChild(span);
+    });
+  }
+  function renderAllLegends(){ graphs.forEach(renderLegendFor); }
+  Object.keys(AXIS_LABELS).forEach(k=>{
+    const o1=document.createElement('option'); o1.value=k; o1.textContent=AXIS_LABELS[k]; newGraphX.appendChild(o1);
+    const o2=document.createElement('option'); o2.value=k; o2.textContent=AXIS_LABELS[k]; newGraphY.appendChild(o2);
+  });
+  newGraphX.value='t'; newGraphY.value='vx';
+  addGraphBtn.addEventListener('click', ()=>addGraphForm.classList.toggle('hidden'));
+  newGraphCancel.addEventListener('click', ()=>{ addGraphForm.classList.add('hidden'); newGraphName.value=''; });
+  newGraphCreate.addEventListener('click', ()=>{
+    const xs=parseFloat(graphXStepInput.value), ys=parseFloat(graphYStepInput.value);
+    addGraph(newGraphX.value, newGraphY.value, newGraphName.value.trim()||null, true, (!isNaN(xs)&&xs>0)?xs:0, (!isNaN(ys)&&ys>0)?ys:0);
+    addGraphForm.classList.add('hidden'); newGraphName.value='';
+  });
+  graphZoomClose.addEventListener('click', ()=>{ zoomedGraphId=null; zoomHover=null; zoomLastGeom=null; graphZoomModal.classList.add('hidden'); });
+
+  function getPointerWorld(evt){
+    if(!lastGeom) return {x:0,y:0};
+    const rect=simCanvas.getBoundingClientRect();
+    return screenToWorld(evt.clientX-rect.left, evt.clientY-rect.top, lastGeom);
+  }
+  function snapToInteger(x){ return Math.round(x); }
+
+  function promptCoords(target){
+    if(target.type==='obj'){
+      const o=target.ref;
+      const xs=window.prompt('x 좌표(m)를 입력하세요', o.x.toFixed(2)); if(xs===null) return;
+      const ys=window.prompt('y 좌표(m)를 입력하세요', bottomY(o).toFixed(2)); if(ys===null) return;
+      const nx=parseFloat(xs), ny=parseFloat(ys);
+      if(!isNaN(nx)&&!isNaN(ny)){ o.x=nx; applyBottomYChange(o,ny); renderObjectPanels(); }
+    } else if(target.type==='struct'){
+      const s=target.ref;
+      const xs=window.prompt('x 좌표(m)를 입력하세요', String(s.type==='ramp'?s.x2:s.x)); if(xs===null) return;
+      const nx=parseFloat(xs); if(isNaN(nx)) return;
+      const currentY=s.type==='ramp'?s.yBase:(s.type==='hline'?s.y:s.yBottom);
+      const ys=window.prompt('y 좌표(m)를 입력하세요', String(currentY)); if(ys===null) return;
+      const ny=Math.max(0,parseFloat(ys)); if(isNaN(ny)) return;
+      const curLabel = s.collisionType==='1'?'1':(s.collisionType==='0'?'0':String(s.restitutionOwn!==undefined?s.restitutionOwn:0.6));
+      const es=window.prompt('이 구조물의 충돌 유형을 입력하세요\n(1=완전탄성충돌, 0=완전비탄성충돌, 0~1 사이 숫자=그 반발계수의 비탄성충돌)', curLabel);
+      if(es!==null){
+        const ev=parseFloat(es);
+        if(!isNaN(ev)){
+          if(ev>=1){ s.collisionType='1'; } else if(ev<=0){ s.collisionType='0'; } else { s.collisionType='custom'; s.restitutionOwn=ev; }
+        }
+      }
+      if(s.type==='ramp'){ const baseLen=Math.abs(s.x2-s.x1); s.x2=nx; s.x1=s.flip?(nx+baseLen):(nx-baseLen); s.yBase=ny; }
+      else if(s.type==='hline'){ s.x=nx; s.y=ny; }
+      else if(s.type==='vline'){ s.x=nx; s.yBottom=ny; }
+    }
+  }
+
+  simCanvas.addEventListener('pointerdown', evt=>{
+    if(editLocked) return;
+    const w=getPointerWorld(evt);
+    if(interactionMode==='struct'){
+      const type=structTypeSelect.value;
+      if(type==='ramp'){
+        const angleDeg=Math.max(1,Math.min(89,parseFloat(structAngleInput.value)||30));
+        const len=Math.max(0.5,parseFloat(structHeightInput.value)||1);
+        addRamp(w.x, w.y, heightFromBasis(structDimBasisSelect.value,len,angleDeg), angleDeg, structFlipChk.checked, true, newStructCollisionType, newStructRestitutionOwn);
+      } else if(type==='hline'){ addHLine(w.x,w.y,Math.max(0.5,parseFloat(structLenInput.value)||1),true,newStructCollisionType,newStructRestitutionOwn); }
+      else { addVLine(w.x,w.y,Math.max(0.5,parseFloat(structLenInput.value)||1),true,newStructCollisionType,newStructRestitutionOwn); }
+      return;
+    }
+    if(interactionMode==='zone'){
+      if(zonePending){ zonePending=null; return; }
+      const surface=getSupportSurface(w.x);
+      const lenStr=window.prompt('구간 길이(m)를 입력하세요','2'); if(lenStr===null) return;
+      const len=parseFloat(lenStr); if(isNaN(len)||len<=0) return;
+      let x1=Math.round(w.x), x2=x1+Math.round(len);
+      if(surface.kind==='structure'){
+        const s=structures.find(s=>s.id===surface.structureId);
+        if(s&&s.type==='ramp'){ const xmin=Math.min(s.x1,s.x2), xmax=Math.max(s.x1,s.x2); x1=Math.max(xmin,Math.min(xmax,x1)); x2=Math.max(xmin,Math.min(xmax,x2)); }
+      }
+      if(x1>x2){ const t=x1;x1=x2;x2=t; }
+      const muStr=window.prompt('이 구간의 마찰계수(mu)를 입력하세요','0.5');
+      if(muStr!==null){ const mu=parseFloat(muStr); if(!isNaN(mu)&&mu>=0) frictionZones.push({id:zoneIdCounter++, kind:surface.kind==='structure'?'structure':'ground', structureId:surface.structureId, x1,x2,mu}); }
+      return;
+    }
+    for(let i=frictionZones.length-1;i>=0;i--){
+      const z=frictionZones[i]; let hit;
+      if(z.kind==='ground') hit=pointToSegmentDist(w.x,w.y,z.x1,0,z.x2,0)<0.4;
+      else {
+        const s=structures.find(s=>s.id===z.structureId);
+        if(!s||s.type!=='ramp'){ hit=false; }
+        else { const t1=(z.x1-s.x1)/(s.x2-s.x1||1e-6), t2=(z.x2-s.x1)/(s.x2-s.x1||1e-6);
+          hit=pointToSegmentDist(w.x,w.y, s.x1+t1*(s.x2-s.x1), s.yBase+t1*s.height, s.x1+t2*(s.x2-s.x1), s.yBase+t2*s.height)<0.4; }
+      }
+      if(hit){ pendingTarget={type:'zone',ref:z}; pendingStartScreen={x:evt.clientX,y:evt.clientY};
+        longPressTimer=setTimeout(()=>{ pendingTarget=null; longPressTimer=null; },550); return; }
+    }
+    for(let i=objects.length-1;i>=0;i--){
+      const obj=objects[i], half=OBJ_SIZE_M/2;
+      if(Math.abs(w.x-obj.x)<=half && Math.abs(w.y-obj.y)<=half){
+        pendingTarget={type:'obj',ref:obj}; pendingStartScreen={x:evt.clientX,y:evt.clientY};
+        longPressTimer=setTimeout(()=>{ promptCoords(pendingTarget); pendingTarget=null; longPressTimer=null; },550);
+        return;
+      }
+    }
+    for(let i=structures.length-1;i>=0;i--){
+      const s=structures[i];
+      if(hitTestStructure(s,w.x,w.y,0.4)){
+        pendingTarget={type:'struct',ref:s}; pendingStartScreen={x:evt.clientX,y:evt.clientY};
+        longPressTimer=setTimeout(()=>{ promptCoords(pendingTarget); pendingTarget=null; longPressTimer=null; },550);
+        return;
+      }
+    }
+  });
+  simCanvas.addEventListener('pointermove', evt=>{
+    if(editLocked) return;
+    if(pendingTarget && !draggingObj && !draggingStruct && !draggingZone){
+      const dist=Math.hypot(evt.clientX-pendingStartScreen.x, evt.clientY-pendingStartScreen.y);
+      if(dist>6){
+        clearTimeout(longPressTimer); longPressTimer=null;
+        const w=getPointerWorld(evt);
+        if(pendingTarget.type==='obj'){ draggingObj=pendingTarget.ref; draggingObj.dragging=true; }
+        else if(pendingTarget.type==='struct'){
+          draggingStruct=pendingTarget.ref;
+          if(draggingStruct.type==='ramp'){ structDragOffsetX=w.x-draggingStruct.x2; structDragOffsetY=w.y-draggingStruct.yBase; }
+          else { structDragOffsetX=w.x-draggingStruct.x; structDragOffsetY=w.y-(draggingStruct.type==='hline'?draggingStruct.y:draggingStruct.yBottom); }
+        } else if(pendingTarget.type==='zone'){ draggingZone=pendingTarget.ref; structDragOffsetX=w.x-draggingZone.x1; }
+        pendingTarget=null; simCanvas.style.cursor='grabbing';
+      }
+      return;
+    }
+    const w=getPointerWorld(evt);
+    if(draggingObj){
+      draggingObj.x=snapToInteger(w.x); draggingObj.y=Math.max(OBJ_SIZE_M/2,w.y); return;
+    }
+    if(draggingStruct){
+      if(draggingStruct.type==='ramp'){
+        const baseLen=Math.abs(draggingStruct.x2-draggingStruct.x1);
+        const newX2=snapToInteger(w.x-structDragOffsetX), newYBase=Math.max(0,snapToInteger(w.y-structDragOffsetY));
+        draggingStruct.x2=newX2; draggingStruct.x1=draggingStruct.flip?(newX2+baseLen):(newX2-baseLen); draggingStruct.yBase=newYBase;
+      } else if(draggingStruct.type==='hline'){ draggingStruct.x=snapToInteger(w.x-structDragOffsetX); draggingStruct.y=Math.max(0,snapToInteger(w.y-structDragOffsetY)); }
+      else { draggingStruct.x=snapToInteger(w.x-structDragOffsetX); draggingStruct.yBottom=Math.max(0,snapToInteger(w.y-structDragOffsetY)); }
+      return;
+    }
+    if(draggingZone){
+      // A zone stays confined to the surface it was created on — dragging
+      // only slides it along that same ground/structure, it never jumps to
+      // a different one just because it was moved over it.
+      const len=draggingZone.x2-draggingZone.x1;
+      let newX1=snapToInteger(w.x-structDragOffsetX);
+      if(draggingZone.kind==='structure'){
+        const s=structures.find(s=>s.id===draggingZone.structureId);
+        if(s&&s.type==='ramp'){ const xmin=Math.min(s.x1,s.x2), xmax=Math.max(s.x1,s.x2)-len; newX1=Math.max(xmin,Math.min(xmax,newX1)); }
+        else if(s&&s.type==='hline'){ const xmin=Math.min(s.x,s.x+s.length), xmax=Math.max(s.x,s.x+s.length)-len; newX1=Math.max(xmin,Math.min(xmax,newX1)); }
+      }
+      draggingZone.x1=newX1; draggingZone.x2=newX1+len;
+    }
+  });
+  function endDrag(){
+    if(longPressTimer){ clearTimeout(longPressTimer); longPressTimer=null; }
+    pendingTarget=null;
+    if(draggingObj){ draggingObj.dragging=false; snapToNearestSurface(draggingObj); draggingObj=null; renderObjectPanels(); }
+    draggingStruct=null; draggingZone=null; simCanvas.style.cursor='grab';
+  }
+  simCanvas.addEventListener('pointerup', endDrag);
+  simCanvas.addEventListener('pointerleave', endDrag);
+  simCanvas.addEventListener('dblclick', evt=>{
+    if(editLocked) return;
+    const w=getPointerWorld(evt);
+    for(let i=objects.length-1;i>=0;i--){
+      const obj=objects[i], half=OBJ_SIZE_M/2;
+      if(Math.abs(w.x-obj.x)<=half && Math.abs(w.y-obj.y)<=half){
+        if(objects.length<=1){ alert('최소 1개의 물체는 있어야 합니다.'); return; }
+        if(confirm(obj.name+' 을(를) 삭제할까요?')) deleteObject(obj.id);
+        return;
+      }
+    }
+    for(let i=frictionZones.length-1;i>=0;i--){
+      const z=frictionZones[i]; let d;
+      if(z.kind==='ground') d=pointToSegmentDist(w.x,w.y,z.x1,0,z.x2,0);
+      else { const s=structures.find(s=>s.id===z.structureId); if(!s||s.type!=='ramp') continue;
+        const t1=(z.x1-s.x1)/(s.x2-s.x1||1e-6), t2=(z.x2-s.x1)/(s.x2-s.x1||1e-6);
+        d=pointToSegmentDist(w.x,w.y, s.x1+t1*(s.x2-s.x1), s.yBase+t1*s.height, s.x1+t2*(s.x2-s.x1), s.yBase+t2*s.height); }
+      if(d<0.4){ if(confirm('이 마찰구간을 삭제할까요?')) frictionZones.splice(i,1); return; }
+    }
+    for(let i=structures.length-1;i>=0;i--){
+      const s=structures[i];
+      if(hitTestStructure(s,w.x,w.y,0.4)){ if(confirm('이 구조물을 삭제할까요?')){ structures.splice(i,1); removeZonesForStructure(s.id); } return; }
+    }
+  });
+
+  function setInteractionMode(mode){
+    interactionMode=mode; zonePending=null;
+    structModeBtn.classList.toggle('active', mode==='struct');
+    zoneModeBtn.classList.toggle('active', mode==='zone');
+    structHint.classList.toggle('hidden', mode!=='struct');
+    zoneHint.classList.toggle('hidden', mode!=='zone');
+  }
+  structModeBtn.addEventListener('click', ()=>{ if(!editLocked) setInteractionMode(interactionMode==='struct'?'drag':'struct'); });
+  zoneModeBtn.addEventListener('click', ()=>{ if(!editLocked) setInteractionMode(interactionMode==='zone'?'drag':'zone'); });
+  structClearBtn.addEventListener('click', ()=>{ if(editLocked) return; structures=[]; frictionZones=frictionZones.filter(z=>z.kind!=='structure'); });
+  zoneClearBtn.addEventListener('click', ()=>{ if(editLocked) return; frictionZones=[]; });
+  structTypeSelect.addEventListener('change', ()=>{ const isRamp=structTypeSelect.value==='ramp'; structRampFields.classList.toggle('hidden',!isRamp); structLineFields.classList.toggle('hidden',isRamp); });
+
+  frictionInput.addEventListener('input', ()=>{ const v=parseFloat(frictionInput.value); if(!isNaN(v)&&v>=0) friction=v; });
+  groundCollisionTypeSelect.addEventListener('change', ()=>{ groundCollisionType=groundCollisionTypeSelect.value; groundRestitutionWrap.style.display=groundCollisionType==='custom'?'flex':'none'; });
+  groundRestitutionInput.addEventListener('input', ()=>{ const v=parseFloat(groundRestitutionInput.value); if(!isNaN(v)) groundRestitutionOwn=Math.max(0,Math.min(1,v)); });
+  structCollisionTypeSelect.addEventListener('change', ()=>{ newStructCollisionType=structCollisionTypeSelect.value; structRestitutionWrap.style.display=newStructCollisionType==='custom'?'flex':'none'; });
+  structRestitutionInput.addEventListener('input', ()=>{ const v=parseFloat(structRestitutionInput.value); if(!isNaN(v)) newStructRestitutionOwn=Math.max(0,Math.min(1,v)); });
+  objCollisionOffChk.addEventListener('change', ()=>{ objCollisionOff=objCollisionOffChk.checked; });
+  gravitySelect.addEventListener('change', ()=>{
+    if(gravitySelect.value==='custom'){ gravityNumInput.style.display='inline-block'; const v=parseFloat(gravityNumInput.value); GRAVITY=isNaN(v)?0:v; }
+    else { gravityNumInput.style.display='none'; GRAVITY=parseFloat(gravitySelect.value); }
+  });
+  gravityNumInput.addEventListener('input', ()=>{ const v=parseFloat(gravityNumInput.value); if(!isNaN(v)) GRAVITY=v; });
+  speedSelect.addEventListener('change', ()=>{ if(speedSelect.value==='custom'){ speedNumInput.style.display='inline-block'; simSpeed=parseFloat(speedNumInput.value)||1; } else { speedNumInput.style.display='none'; simSpeed=parseFloat(speedSelect.value); } });
+  speedNumInput.addEventListener('input', ()=>{ const v=parseFloat(speedNumInput.value); if(!isNaN(v)) simSpeed=Math.max(0.25,Math.min(4,v)); });
+  speedNumInput.addEventListener('change', ()=>{ const v=parseFloat(speedNumInput.value); if(!isNaN(v)) speedNumInput.value=String(Math.max(0.25,Math.min(4,v))); });
+  collisionTypeSelect.addEventListener('change', ()=>{ restitutionWrap.style.display=collisionTypeSelect.value==='custom'?'flex':'none'; });
+  mapCellsXInput.addEventListener('input', ()=>{ const v=parseFloat(mapCellsXInput.value); if(!isNaN(v)&&v>=6) mapCellsX=v; });
+  gridSpacingInput.addEventListener('input', ()=>{ const v=parseFloat(gridSpacingInput.value); if(!isNaN(v)&&v>0) gridSpacing=v; });
+  vGridSpacingInput.addEventListener('input', ()=>{ const v=parseFloat(vGridSpacingInput.value); if(!isNaN(v)&&v>0) vGridSpacing=v; });
+  originXInput.addEventListener('input', ()=>{ const v=parseFloat(originXInput.value); if(!isNaN(v)) originX=v; });
+  showVelChk.addEventListener('change', ()=>{ showVelVec=showVelChk.checked; });
+  showNormalChk.addEventListener('change', ()=>{ showNormalVec=showNormalChk.checked; });
+  showLabelsChk.addEventListener('change', ()=>{ showLabels=showLabelsChk.checked; });
+  timeLimitInput.addEventListener('input', ()=>{ const v=parseFloat(timeLimitInput.value); timeLimitSec=(!isNaN(v)&&v>0)?v:0; });
+
+  fullscreenBtn.addEventListener('click', ()=>{
+    if(!document.fullscreenElement){ (simWrap.requestFullscreen||simWrap.webkitRequestFullscreen||function(){}).call(simWrap); }
+    else { (document.exitFullscreen||document.webkitExitFullscreen||function(){}).call(document); }
+  });
+  document.addEventListener('fullscreenchange', ()=>{ fullscreenBtn.textContent=document.fullscreenElement?'전체화면 종료':'전체화면'; });
+
+  function updateLockUI(){
+    lockBtn.classList.toggle('locked', editLocked);
+    lockBtn.textContent = editLocked ? '🔒' : '🔓';
+    envControlGroups.forEach(el=>el.classList.toggle('locked', editLocked));
+    settingsBody.classList.toggle('locked', editLocked);
+    simCanvas.style.cursor = editLocked ? 'not-allowed' : 'grab';
+    addObjBtn.disabled = editLocked;
+  }
+  lockBtn.addEventListener('click', ()=>{ editLocked=!editLocked; updateLockUI(); });
+
+  let physicsAccumulator=0;
+  function tick(ts){
+    // 기체 모드가 활성화된 동안에는 기존 일반 역학 물리/렌더링을 전혀 실행하지 않는다.
+    // (기존 상태값은 손대지 않고, 루프만 다음 프레임으로 넘긴다 — §16, §3)
+    if(window.gasModeActive){ requestAnimationFrame(tick); return; }
+    if(lastTs===null) lastTs=ts;
+    let frameDt=(ts-lastTs)/1000; lastTs=ts; frameDt=Math.min(frameDt,0.1);
+    if(running){
+      // Fixed-timestep accumulator (spec §5): every physics step is exactly
+      // PHYSICS_DT of simulated time, regardless of the render frame's
+      // actual duration — simSpeed only changes how much sim-time is added
+      // per real second, never the size (or accuracy) of a physics step.
+      physicsAccumulator += frameDt*simSpeed;
+      let steps=0;
+      while(physicsAccumulator>=PHYSICS_DT && steps<480){
+        // If this step would cross the time limit, shorten it so simTime
+        // lands on EXACTLY timeLimitSec (not up to one PHYSICS_DT past it) —
+        // a time-limited run then always stops at the precise second asked
+        // for, down to floating-point precision, not just "close to" it.
+        let stepDt=PHYSICS_DT, isFinal=false;
+        if(timeLimitSec>0 && simTime+PHYSICS_DT>=timeLimitSec){
+          stepDt=Math.max(0,timeLimitSec-simTime); isFinal=true;
+        }
+        if(stepDt>1e-9){ simTime+=stepDt; physicsStepOnce(stepDt); recordHistory(); }
+        physicsAccumulator-=PHYSICS_DT;
+        steps++;
+        if(isFinal){ simTime=timeLimitSec; setRunning(false); break; }
+      }
+    }
+    renderSim(); refreshInfoTable(); graphs.forEach(renderGraph);
+    if(zoomedGraphId!==null){
+      const zg=graphs.find(g=>g.id===zoomedGraphId);
+      if(zg){
+        const proxyRender={xKey:zg.xKey,yKey:zg.yKey,xStep:zg.xStep,yStep:zg.yStep,hiddenIds:zg.hiddenIds,canvas:graphZoomCanvas,ctx:graphZoomCtx,hover:zoomHover,isZoom:true};
+        renderGraph(proxyRender);
+        zoomLastGeom=proxyRender.lastGeom;
+      } else { zoomedGraphId=null; graphZoomModal.classList.add('hidden'); }
+    }
+    requestAnimationFrame(tick);
+  }
+
+  addObjBtn.addEventListener('click', ()=>{ if(editLocked) return; createObject(); renderObjectPanels(); renderAllLegends(); refreshInfoTable(); });
+  function setRunning(val){
+    if(val && !running && simTime===0){
+      preRunSnapshot=objects.map(o=>({id:o.id,x:o.x,y:o.y,vx:o.vx,vy:o.vy,
+        m:o.m,F:o.F,theta:o.theta,forceDuration:o.forceDuration,
+        collisionType:o.collisionType,restitutionOwn:o.restitutionOwn}));
+      objects.forEach(o=>{ o.forceStartTime=0; });
+    }
+    running=val; lastTs=null; physicsAccumulator=0;
+    [startPauseBtn,miniStartPause].forEach(btn=>btn.classList.toggle('running',running));
+    startPauseBtn.textContent=running?'II 일시정지':'▶ 운동 시작';
+    miniStartPause.textContent=running?'II':'▶';
+  }
+  function doMotionReset(){
+    running=false; simTime=0; lastTs=null; offscreenSince={};
+    [startPauseBtn,miniStartPause].forEach(btn=>btn.classList.remove('running'));
+    startPauseBtn.textContent='▶ 운동 시작'; miniStartPause.textContent='▶';
+    physicsAccumulator=0;
+    objects.forEach(obj=>{
+      // "초기화" restores each object to how it was the moment 운동 시작
+      // was first pressed (all its settings, not just position/velocity) —
+      // NOT all the way back to whatever it was when first created, so
+      // edits made before ever starting the motion are kept.
+      const snap=preRunSnapshot && preRunSnapshot.find(s=>s.id===obj.id);
+      if(snap){
+        obj.x=snap.x; obj.y=snap.y; obj.vx=snap.vx; obj.vy=snap.vy;
+        obj.m=snap.m; obj.F=snap.F; obj.theta=snap.theta; obj.forceDuration=snap.forceDuration;
+        obj.collisionType=snap.collisionType; obj.restitutionOwn=snap.restitutionOwn;
+      }
+      else { obj.x=obj.spawnX; obj.y=obj.spawnY; obj.vx=0; obj.vy=0; }
+      obj.ax=0; obj.ay=0; obj.forceStartTime=0;
+      snapToNearestSurface(obj);
+    });
+    clearHistories(); renderSim(); refreshInfoTable(); renderObjectPanels();
+  }
+  startPauseBtn.addEventListener('click', ()=>setRunning(!running));
+  miniStartPause.addEventListener('click', ()=>setRunning(!running));
+  resetBtn.addEventListener('click', doMotionReset); miniReset.addEventListener('click', doMotionReset);
+  clearAllBtn.addEventListener('click', ()=>{
+    if(!confirm('물체, 구조물, 마찰구간을 모두 삭제할까요? (설정값과 저장된 세팅은 유지됩니다)')) return;
+    running=false; simTime=0; lastTs=null; offscreenSince={}; preRunSnapshot=null;
+    startPauseBtn.classList.remove('running'); startPauseBtn.textContent='▶ 운동 시작';
+    miniStartPause.classList.remove('running'); miniStartPause.textContent='▶';
+    objects=[]; history={}; objCounter=0; structures=[]; structIdCounter=0; frictionZones=[];
+    collisionLog=[]; resetCollisionPanel(); createObject();
+    renderObjectPanels(); renderAllLegends(); refreshInfoTable();
+  });
+
+  function hardResetState(){
+    running=false; simTime=0; lastTs=null; offscreenSince={}; preRunSnapshot=null;
+    startPauseBtn.classList.remove('running'); startPauseBtn.textContent='▶ 운동 시작';
+    miniStartPause.classList.remove('running'); miniStartPause.textContent='▶';
+    objects=[]; history={}; objCounter=0; structures=[]; structIdCounter=0; frictionZones=[];
+    friction=0; frictionInput.value='0'; GRAVITY=9.8; gravitySelect.value='9.8'; gravityNumInput.value='9.8'; gravityNumInput.style.display='none';
+    groundCollisionType='0'; groundCollisionTypeSelect.value='0'; groundRestitutionWrap.style.display='none'; groundRestitutionOwn=0.6; groundRestitutionInput.value='0.6';
+    newStructCollisionType='1'; structCollisionTypeSelect.value='1'; structRestitutionWrap.style.display='none'; newStructRestitutionOwn=0.6; structRestitutionInput.value='0.6';
+    objCollisionOff=false; objCollisionOffChk.checked=false;
+    simSpeed=1; speedSelect.value='1'; speedNumInput.style.display='none'; speedNumInput.value='1';
+    timeLimitSec=0; timeLimitInput.value='';
+    collisionTypeSelect.value='1'; restitutionWrap.style.display='none'; restitutionInput.value='0.6';
+    originX=0; originXInput.value='0';
+    mapCellsX=40; mapCellsXInput.value='40'; mapCellsY=18;
+    gridSpacing=1; gridSpacingInput.value='1'; vGridSpacing=1; vGridSpacingInput.value='1';
+    showVelVec=true; showVelChk.checked=true; showNormalVec=false; showNormalChk.checked=false;
+    showLabels=true; showLabelsChk.checked=true;
+    editLocked=false; updateLockUI();
+    graphXStepInput.value='1'; graphYStepInput.value='1'; setInteractionMode('drag');
+    collisionLog=[]; resetCollisionPanel(); graphsGrid.innerHTML=''; graphs=[]; graphIdCounter=0;
+  }
+  function buildDefaultGraphs(){ addGraph('t','x','x-t (위치)',true,1,1); addGraph('t','vMag','v-t (속력)',true,1,1); }
+  fullResetBtn.addEventListener('click', ()=>{
+    if(!confirm('사이트 전체를 초기화할까요?\n모든 물체, 구조물, 마찰구간, 설정, 그래프뿐 아니라\n저장된 세팅(불러오기 목록)까지 전부 삭제됩니다. 되돌릴 수 없습니다.')) return;
+    try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+    hardResetState(); createObject(); buildDefaultGraphs();
+    renderObjectPanels(); renderAllLegends(); refreshInfoTable();
+  });
+  window.addEventListener('resize', ()=>{ renderSim(); graphs.forEach(renderGraph); });
+
+  const STORAGE_KEY='motionExperimentPresets_v8';
+  function loadPresetsRaw(){ try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}'); } catch(e){ return {}; } }
+  function savePresetsRaw(data){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); return true; } catch(e){ alert('저장 기능을 사용할 수 없는 환경입니다. 파일을 다운로드해 실제 브라우저에서 열어보세요.'); return false; } }
+  function serializeState(){
+    return {
+      gravity:GRAVITY, friction, simSpeed, timeLimitSec, groundCollisionType, groundRestitutionOwn, objCollisionOff,
+      collisionType:collisionTypeSelect.value, restitution:parseFloat(restitutionInput.value)||0.6,
+      originX, gridSpacing, vGridSpacing, mapCellsX, mapCellsY, showLabels, showVelVec, showNormalVec,
+      structures: structures.map(function(s){
+        if(s.type==='ramp') return {type:'ramp', x2:s.x2, yBase:s.yBase, height:s.height, angleDeg:s.angleDeg, flip:s.flip, collisionType:s.collisionType, restitutionOwn:s.restitutionOwn};
+        if(s.type==='hline') return {type:'hline', x:s.x, y:s.y, length:s.length, collisionType:s.collisionType, restitutionOwn:s.restitutionOwn};
+        return {type:'vline', x:s.x, yBottom:s.yBottom, length:s.length, collisionType:s.collisionType, restitutionOwn:s.restitutionOwn};
+      }),
+      frictionZones: frictionZones.map(function(z){ return {kind:z.kind, structureIndex: z.kind==='structure'?structures.findIndex(function(s){return s.id===z.structureId;}):null, x1:z.x1, x2:z.x2, mu:z.mu}; }),
+      objects: objects.map(function(o){ return {m:o.m,F:o.F,theta:o.theta,x:o.x,y:o.y,vx:o.vx,vy:o.vy,name:o.name,color:o.color,showVectors:o.showVectors,collisionType:o.collisionType,restitutionOwn:o.restitutionOwn,forceDuration:isFinite(o.forceDuration)?o.forceDuration:null}; }),
+      graphs: graphs.map(function(g){ return {xKey:g.xKey,yKey:g.yKey,name:g.name,deletable:g.deletable,xStep:g.xStep,yStep:g.yStep}; })
+    };
+  }
+  function loadState(state){
+    hardResetState();
+    GRAVITY=(state.gravity!==undefined&&state.gravity!==null)?state.gravity:9.8;
+    if(GRAVITY===9.8){ gravitySelect.value='9.8'; gravityNumInput.style.display='none'; }
+    else if(GRAVITY===10){ gravitySelect.value='10'; gravityNumInput.style.display='none'; }
+    else { gravitySelect.value='custom'; gravityNumInput.style.display='inline-block'; gravityNumInput.value=String(GRAVITY); }
+    friction=state.friction||0; frictionInput.value=String(friction);
+    groundCollisionType=state.groundCollisionType||'0'; groundCollisionTypeSelect.value=groundCollisionType; groundRestitutionWrap.style.display=groundCollisionType==='custom'?'flex':'none';
+    groundRestitutionOwn=state.groundRestitutionOwn!==undefined?state.groundRestitutionOwn:0.6; groundRestitutionInput.value=String(groundRestitutionOwn);
+    objCollisionOff=!!state.objCollisionOff; objCollisionOffChk.checked=objCollisionOff;
+    simSpeed=state.simSpeed||1;
+    const presetVals=['0.25','0.5','1','1.5','2','3'];
+    if(presetVals.indexOf(String(simSpeed))>=0){ speedSelect.value=String(simSpeed); speedNumInput.style.display='none'; }
+    else { speedSelect.value='custom'; speedNumInput.style.display='inline-block'; speedNumInput.value=String(simSpeed); }
+    timeLimitSec=state.timeLimitSec||0; timeLimitInput.value=timeLimitSec||'';
+    collisionTypeSelect.value=state.collisionType||'1'; restitutionWrap.style.display=collisionTypeSelect.value==='custom'?'flex':'none';
+    restitutionInput.value=state.restitution||0.6;
+    originX=state.originX||0; originXInput.value=String(originX);
+    mapCellsX=state.mapCellsX||40; mapCellsXInput.value=String(mapCellsX);
+    mapCellsY=state.mapCellsY||18;
+    gridSpacing=state.gridSpacing||1; gridSpacingInput.value=String(gridSpacing);
+    vGridSpacing=state.vGridSpacing||1; vGridSpacingInput.value=String(vGridSpacing);
+    showVelVec=!!state.showVelVec; showVelChk.checked=showVelVec;
+    showNormalVec=!!state.showNormalVec; showNormalChk.checked=showNormalVec;
+    showLabels=state.showLabels!==false; showLabelsChk.checked=showLabels;
+    (state.structures||[]).forEach(function(s){
+      if(s.type==='ramp') addRamp(s.x2,s.yBase,s.height,s.angleDeg,s.flip,false,s.collisionType,s.restitutionOwn);
+      else if(s.type==='hline') addHLine(s.x,s.y,s.length,false,s.collisionType,s.restitutionOwn);
+      else if(s.type==='vline') addVLine(s.x,s.yBottom,s.length,false,s.collisionType,s.restitutionOwn);
+    });
+    (state.frictionZones||[]).forEach(function(z){
+      const structureId=(z.kind==='structure'&&z.structureIndex>=0&&structures[z.structureIndex])?structures[z.structureIndex].id:null;
+      frictionZones.push({id:zoneIdCounter++, kind:z.kind, structureId, x1:z.x1, x2:z.x2, mu:z.mu});
+    });
+    if(state.objects&&state.objects.length) state.objects.forEach(function(o){ createObject(o); });
+    else createObject();
+    if(state.graphs&&state.graphs.length) state.graphs.forEach(function(g){ addGraph(g.xKey,g.yKey,g.name,g.deletable!==false,g.xStep,g.yStep); });
+    else buildDefaultGraphs();
+    renderObjectPanels(); renderAllLegends(); refreshInfoTable(); renderSim();
+  }
+  function renderPresetList(){
+    const data=loadPresetsRaw();
+    const names=Object.keys(data).sort(function(a,b){ return (data[b].savedAt||'').localeCompare(data[a].savedAt||''); });
+    presetList.innerHTML='';
+    if(names.length===0){ presetList.innerHTML='<div style="font-family:var(--mono);font-size:12px;color:var(--text-dim);">저장된 세팅이 없습니다.</div>'; return; }
+    names.forEach(function(name){
+      const entry=data[name];
+      const row=document.createElement('div'); row.className='preset-row';
+      const dateStr=entry.savedAt?new Date(entry.savedAt).toLocaleString():'';
+      row.innerHTML='<div><div class="pname">'+name+'</div><div style="color:var(--text-dim);font-size:10.5px;">'+dateStr+'</div></div>';
+      const btnWrap=document.createElement('div');
+      const loadBtn=document.createElement('button'); loadBtn.className='load'; loadBtn.textContent='불러오기';
+      loadBtn.addEventListener('click', function(){ if(confirm('"'+name+'" 세팅을 불러올까요? 현재 상태는 사라집니다.')){ loadState(entry.state); presetModal.classList.add('hidden'); } });
+      const delBtn=document.createElement('button'); delBtn.className='del'; delBtn.textContent='삭제';
+      delBtn.addEventListener('click', function(){ if(confirm('"'+name+'" 세팅을 삭제할까요?')){ delete data[name]; savePresetsRaw(data); renderPresetList(); } });
+      btnWrap.appendChild(loadBtn); btnWrap.appendChild(delBtn); row.appendChild(btnWrap); presetList.appendChild(row);
+    });
+  }
+  presetBtn.addEventListener('click', ()=>{ renderPresetList(); presetModal.classList.remove('hidden'); });
+  presetModalClose.addEventListener('click', ()=>presetModal.classList.add('hidden'));
+  presetSaveBtn.addEventListener('click', ()=>{
+    const name=presetNameInput.value.trim();
+    if(!name){ alert('세팅 이름을 입력해주세요.'); return; }
+    const data=loadPresetsRaw();
+    if(data[name] && !confirm('같은 이름의 세팅이 있습니다. 덮어쓸까요?')) return;
+    data[name]={ savedAt:new Date().toISOString(), state:serializeState() };
+    if(savePresetsRaw(data)){ presetNameInput.value=''; renderPresetList(); }
+  });
+  helpBtn.addEventListener('click', ()=>helpModal.classList.remove('hidden'));
+  helpModalClose.addEventListener('click', ()=>helpModal.classList.add('hidden'));
+
+  createObject();
+  buildDefaultGraphs();
+  renderObjectPanels();
+  renderAllLegends();
+  refreshInfoTable();
+  updateLockUI();
+  requestAnimationFrame(tick);
+
+})();
+
+</script>
+
+<!-- ============================== -->
+<!-- GAS MOLECULAR SIMULATION ENGINE                                    -->
+<!-- 기존 일반 역학 시스템과 완전히 독립된 별도 모듈.                   -->
+<!-- 기존 script 블록의 어떤 변수/함수/클래스도 참조하지 않는다.        -->
+<!-- ============================== -->
+<script>
+(function(){
+  'use strict';
+
+  // 기존 tick()가 참조하는 전역 플래그. 이 파일 밖에서는 이 값만 읽는다.
+  window.gasModeActive = false;
+
+  // ---------- 물리 상수 (기체 모드 전용, gas 접두사) ----------
+  const GAS_PHYSICS_DT = 1/120;      // 고정 물리 타임스텝(초)
+  const GAS_MAX_STEPS_PER_FRAME = 240;
+  const GAS_KB = 20;                 // 임의 단위의 볼츠만 상수 역할 (상대 온도 스케일)
+  const GAS_PRESSURE_SAMPLE_INTERVAL = 0.5; // 초 단위로 압력을 갱신
+  const GAS_TRAIL_MAX_POINTS = 4000; // 대표입자 경로표시 최대 점 개수(메모리 상한)
+
+  // ---------- DOM ----------
+  const gasOverlay = document.getElementById('gas-mode-overlay');
+  const gasCanvas = document.getElementById('gasCanvas');
+  const gasCtx = gasCanvas.getContext('2d');
+
+  const gasCountSlider = document.getElementById('gasCountSlider');
+  const gasCountNum = document.getElementById('gasCountNum');
+  const gasTempSlider = document.getElementById('gasTempSlider');
+  const gasTempNum = document.getElementById('gasTempNum');
+  const gasWidthSlider = document.getElementById('gasWidthSlider');
+  const gasWidthNum = document.getElementById('gasWidthNum');
+  const gasHeightSlider = document.getElementById('gasHeightSlider');
+  const gasHeightNum = document.getElementById('gasHeightNum');
+  const gasPauseBtn = document.getElementById('gasPauseBtn');
+  const gasResetBtn = document.getElementById('gasResetBtn');
+  const gasRepModeChk = document.getElementById('gasRepModeChk');
+  const gasTrailField = document.getElementById('gasTrailField');
+  const gasTrailChk = document.getElementById('gasTrailChk');
+
+  const gasStatCount = document.getElementById('gasStatCount');
+  const gasStatTemp = document.getElementById('gasStatTemp');
+  const gasStatSize = document.getElementById('gasStatSize');
+  const gasStatSpeed = document.getElementById('gasStatSpeed');
+  const gasStatAvgKE = document.getElementById('gasStatAvgKE');
+  const gasStatTotalKE = document.getElementById('gasStatTotalKE');
+  const gasStatPressure = document.getElementById('gasStatPressure');
+  const gasStatWallHits = document.getElementById('gasStatWallHits');
+  const gasStatTime = document.getElementById('gasStatTime');
+  const gasStatsPanel = document.getElementById('gasStatsPanel');
+
+  // ---------- 유틸: Box-Muller 정규분포 난수 ----------
+  function gasRandNormal(){
+    let u=0, v=0;
+    while(u===0) u=Math.random();
+    while(v===0) v=Math.random();
+    return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+  }
+
+  // ---------- 입자 클래스 ----------
+  class GasParticle{
+    constructor(x,y,vx,vy,mass,radius){
+      this.x=x; this.y=y; this.vx=vx; this.vy=vy;
+      this.mass=mass; this.radius=radius;
+      this.isRepresentative=false; // 대표입자 여부 (렌더링에서만 사용, 물리에는 영향 없음)
+    }
+  }
+
+  // ---------- 기체 시뮬레이션 엔진 ----------
+  class GasSimulationEngine{
+    constructor(){
+      this.containerW=700;   // 용기 폭 (px, 시뮬레이션 단위 겸용)
+      this.containerH=460;   // 용기 높이
+      this.particleCount=80;
+      this.temperature=300;  // 상대 시뮬레이션 온도
+      this.baseMass=1;
+      this.baseRadius=4.5;
+      this.particles=[];
+      this.running=true;
+      this.simTime=0;
+
+      this.wallImpulseAccum=0;   // 벽에 전달된 |운동량 변화| 누적
+      this.wallImpulseTimer=0;
+      this.pressure=0;
+      this.wallCollisionCount=0;
+
+      this.representativeMode=false; // 대표입자 설정 모드 on/off
+      this.trailMode=false;          // 대표입자 경로표시 on/off (대표입자 모드가 꺼지면 항상 함께 꺼짐)
+      this.trail=[];                 // 대표입자가 지나온 좌표들 [{x,y}, ...]
+
+      this.reset();
+    }
+
+    // 대표입자 설정 모드가 켜져 있으면 입자들 중 정확히 하나에만
+    // isRepresentative=true를 부여한다 (여러 개가 동시에 빨간색이 되지 않도록).
+    _applyRepresentative(){
+      for(const p of this.particles) p.isRepresentative=false;
+      if(this.representativeMode && this.particles.length>0){
+        this.particles[0].isRepresentative=true;
+      }
+    }
+
+    setRepresentativeMode(active){
+      this.representativeMode=!!active;
+      this._applyRepresentative();
+      // 대표입자 자체가 꺼지면 경로표시도 의미가 없어지므로 함께 끈다.
+      if(!this.representativeMode) this.setTrailMode(false);
+    }
+
+    setTrailMode(active){
+      this.trailMode=!!active;
+      this.trail=[]; // 켤 때도, 끌 때도 항상 새로 시작 — 이전 경로가 이어붙지 않는다.
+    }
+
+    // 용기 안에서 겹치지 않게 입자를 새로 배치하고 온도에 맞는 속도 분포를 부여
+    reset(){
+      this.particles=[];
+      this.wallImpulseAccum=0; this.wallImpulseTimer=0; this.pressure=0;
+      this.wallCollisionCount=0; this.simTime=0;
+      this.trail=[]; // 입자들이 전부 새로 배치되므로 이전 경로는 더 이상 의미가 없다.
+      const r=this.baseRadius;
+      let attempts=0;
+      for(let i=0;i<this.particleCount;i++){
+        let x,y,ok;
+        let tries=0;
+        do{
+          x=r+Math.random()*(this.containerW-2*r);
+          y=r+Math.random()*(this.containerH-2*r);
+          ok=true;
+          for(let j=0;j<this.particles.length;j++){
+            const p=this.particles[j];
+            const dx=p.x-x, dy=p.y-y;
+            if(Math.sqrt(dx*dx+dy*dy) < (p.radius+r)*1.02){ ok=false; break; }
+          }
+          tries++;
+        } while(!ok && tries<400);
+        // 온도로부터 결정되는 속도 표준편차: sigma = sqrt(kB*T/m)
+        // vx,vy를 독립적인 정규분포로 뽑으면 2차원에서 속력은 자연스럽게
+        // 맥스웰-볼츠만(레일리) 분포를 따르게 되어, 모든 입자의 속력이
+        // 서로 달라진다 (v1 ≠ v2 ≠ v3 ...).
+        const sigma=Math.sqrt(GAS_KB*this.temperature/this.baseMass);
+        const vx=gasRandNormal()*sigma;
+        const vy=gasRandNormal()*sigma;
+        this.particles.push(new GasParticle(x,y,vx,vy,this.baseMass,r));
+      }
+      this._applyRepresentative();
+    }
+
+    setParticleCount(n){
+      n=Math.max(1,Math.round(n));
+      if(n===this.particleCount) return;
+      if(n<this.particleCount){
+        this.particles.length=n;
+      } else {
+        const sigma=Math.sqrt(GAS_KB*this.temperature/this.baseMass);
+        const r=this.baseRadius;
+        for(let i=this.particleCount;i<n;i++){
+          let x,y,ok,tries=0;
+          do{
+            x=r+Math.random()*(this.containerW-2*r);
+            y=r+Math.random()*(this.containerH-2*r);
+            ok=true;
+            for(let j=0;j<this.particles.length;j++){
+              const p=this.particles[j];
+              const dx=p.x-x, dy=p.y-y;
+              if(Math.sqrt(dx*dx+dy*dy) < (p.radius+r)*1.02){ ok=false; break; }
+            }
+            tries++;
+          } while(!ok && tries<200);
+          const vx=gasRandNormal()*sigma, vy=gasRandNormal()*sigma;
+          this.particles.push(new GasParticle(x,y,vx,vy,this.baseMass,r));
+        }
+      }
+      this.particleCount=n;
+      this._applyRepresentative(); // 입자 수가 바뀌어도 대표입자는 항상 정확히 하나만 유지
+    }
+
+    // 온도를 바꾸면, 현재 속도 분포의 "형태"는 유지한 채(입자마다 속력이
+    // 다른 상태 그대로) 평균 운동에너지만 새 온도에 맞도록 일괄 재조정한다.
+    // → 온도 증가 ⇒ 평균 운동에너지 증가 ⇒ 평균 속력 증가 (§9)
+    setTemperature(t){
+      this.temperature=Math.max(0,t);
+      let curKE=0;
+      for(const p of this.particles) curKE += 0.5*p.mass*(p.vx*p.vx+p.vy*p.vy);
+      const n=this.particles.length;
+      if(n===0) return;
+      const curAvgKE=curKE/n;
+      const targetAvgKE=GAS_KB*this.temperature; // 2D: <KE> = kB*T (자유도 2 기준의 비례식)
+      if(curAvgKE<1e-9){
+        // 입자가 전부 정지해 있던 예외적인 경우, 새로 무작위 속도를 부여
+        const sigma=Math.sqrt(GAS_KB*this.temperature/this.baseMass);
+        for(const p of this.particles){ p.vx=gasRandNormal()*sigma; p.vy=gasRandNormal()*sigma; }
+        return;
+      }
+      const scale=Math.sqrt(targetAvgKE/curAvgKE);
+      for(const p of this.particles){ p.vx*=scale; p.vy*=scale; }
+    }
+
+    setContainerSize(w,h){
+      this.containerW=Math.max(50,w);
+      this.containerH=Math.max(50,h);
+      const r=this.baseRadius;
+      for(const p of this.particles){
+        p.x=Math.min(Math.max(p.x,r),this.containerW-r);
+        p.y=Math.min(Math.max(p.y,r),this.containerH-r);
+      }
+    }
+
+    // 성능: 입자 수가 많아질 때를 대비한 균일 격자 기반 이웃 탐색.
+    // 처음엔 단순한 전수조사(O(n^2))도 동작하지만, 격자를 쓰면 인접 셀만
+    // 검사하므로 불필요한 쌍 비교를 크게 줄일 수 있다.
+    _buildGrid(){
+      const cell=this.baseRadius*4;
+      const cols=Math.max(1,Math.ceil(this.containerW/cell));
+      const rows=Math.max(1,Math.ceil(this.containerH/cell));
+      const grid=new Map();
+      const key=(cx,cy)=>cx+'_'+cy;
+      for(let i=0;i<this.particles.length;i++){
+        const p=this.particles[i];
+        const cx=Math.min(cols-1,Math.max(0,Math.floor(p.x/cell)));
+        const cy=Math.min(rows-1,Math.max(0,Math.floor(p.y/cell)));
+        const k=key(cx,cy);
+        if(!grid.has(k)) grid.set(k,[]);
+        grid.get(k).push(i);
+        p._cx=cx; p._cy=cy;
+      }
+      return {grid,cell,cols,rows,key};
+    }
+
+    _resolvePairCollision(p1,p2){
+      const dx=p2.x-p1.x, dy=p2.y-p1.y;
+      let dist=Math.sqrt(dx*dx+dy*dy);
+      const minDist=p1.radius+p2.radius;
+      if(dist>=minDist || dist===0) return;
+      const nx=dx/dist, ny=dy/dist;
+      // 겹침 보정 (질량에 반비례하여 밀어냄)
+      const overlap=minDist-dist;
+      const totalMass=p1.mass+p2.mass;
+      const push1=overlap*(p2.mass/totalMass);
+      const push2=overlap*(p1.mass/totalMass);
+      p1.x-=nx*push1; p1.y-=ny*push1;
+      p2.x+=nx*push2; p2.y+=ny*push2;
+
+      // 법선/접선 성분 분해 후 1차원 탄성충돌 공식 적용 (질량이 달라도 성립)
+      const tx=-ny, ty=nx;
+      const v1n=p1.vx*nx+p1.vy*ny, v1t=p1.vx*tx+p1.vy*ty;
+      const v2n=p2.vx*nx+p2.vy*ny, v2t=p2.vx*tx+p2.vy*ty;
+      // 접근 중이 아니면(이미 분리 중) 속도는 건드리지 않는다
+      if(v1n-v2n<=0) return;
+      const m1=p1.mass, m2=p2.mass;
+      const v1nAfter=((m1-m2)*v1n+2*m2*v2n)/(m1+m2);
+      const v2nAfter=((m2-m1)*v2n+2*m1*v1n)/(m1+m2);
+      p1.vx=v1nAfter*nx+v1t*tx; p1.vy=v1nAfter*ny+v1t*ty;
+      p2.vx=v2nAfter*nx+v2t*tx; p2.vy=v2nAfter*ny+v2t*ty;
+    }
+
+    step(dt){
+      const r=this.baseRadius;
+      // 1) 이동 + 벽 충돌 (완전 탄성, 에너지 손실 없음)
+      for(const p of this.particles){
+        p.x+=p.vx*dt; p.y+=p.vy*dt;
+        if(p.x-p.radius<0){ p.x=p.radius; p.vx=-p.vx; this.wallImpulseAccum+=2*p.mass*Math.abs(p.vx); this.wallCollisionCount++; }
+        else if(p.x+p.radius>this.containerW){ p.x=this.containerW-p.radius; p.vx=-p.vx; this.wallImpulseAccum+=2*p.mass*Math.abs(p.vx); this.wallCollisionCount++; }
+        if(p.y-p.radius<0){ p.y=p.radius; p.vy=-p.vy; this.wallImpulseAccum+=2*p.mass*Math.abs(p.vy); this.wallCollisionCount++; }
+        else if(p.y+p.radius>this.containerH){ p.y=this.containerH-p.radius; p.vy=-p.vy; this.wallImpulseAccum+=2*p.mass*Math.abs(p.vy); this.wallCollisionCount++; }
+      }
+
+      // 2) 입자-입자 충돌 (격자 기반 이웃 탐색으로 불필요한 쌍 비교 축소)
+      const {grid,cols,rows,key}=this._buildGrid();
+      const n=this.particles.length;
+      const checked=new Set();
+      for(let i=0;i<n;i++){
+        const p1=this.particles[i];
+        for(let ox=-1;ox<=1;ox++){
+          for(let oy=-1;oy<=1;oy++){
+            const cx=p1._cx+ox, cy=p1._cy+oy;
+            if(cx<0||cy<0||cx>=cols||cy>=rows) continue;
+            const bucket=grid.get(key(cx,cy));
+            if(!bucket) continue;
+            for(const j of bucket){
+              if(j<=i) continue;
+              const pairKey=i*100000+j;
+              if(checked.has(pairKey)) continue;
+              checked.add(pairKey);
+              this._resolvePairCollision(p1,this.particles[j]);
+            }
+          }
+        }
+      }
+
+      // 3) 압력 = 단위 시간당 벽에 전달된 운동량(=힘) / 용기 둘레(2D에서의 "벽 면적" 역할)
+      this.wallImpulseTimer+=dt;
+      this.simTime+=dt;
+      if(this.wallImpulseTimer>=GAS_PRESSURE_SAMPLE_INTERVAL){
+        const perimeter=2*(this.containerW+this.containerH);
+        const avgForce=this.wallImpulseAccum/this.wallImpulseTimer;
+        this.pressure=avgForce/perimeter;
+        this.wallImpulseAccum=0; this.wallImpulseTimer=0;
+      }
+
+      // 4) 대표입자 경로표시: 이번 스텝에서 실제로 이동/충돌을 모두 반영한
+      // 최종 위치를 경로에 기록한다. 메모리가 끝없이 늘어나지 않도록
+      // 오래된 점부터 잘라낸다(화면에 남는 자취 길이에는 영향 없을 만큼
+      // 충분히 긴 상한).
+      if(this.trailMode && this.representativeMode && this.particles.length>0){
+        const rep=this.particles[0];
+        this.trail.push({x:rep.x,y:rep.y});
+        if(this.trail.length>GAS_TRAIL_MAX_POINTS) this.trail.splice(0,this.trail.length-GAS_TRAIL_MAX_POINTS);
+      }
+    }
+
+    stats(){
+      const n=this.particles.length;
+      let totalKE=0, totalSpeed=0;
+      for(const p of this.particles){
+        const speed=Math.sqrt(p.vx*p.vx+p.vy*p.vy);
+        totalSpeed+=speed;
+        totalKE+=0.5*p.mass*speed*speed;
+      }
+      return {
+        count:n,
+        avgSpeed: n?totalSpeed/n:0,
+        avgKE: n?totalKE/n:0,
+        totalKE,
+        pressure:this.pressure,
+        wallCollisionCount:this.wallCollisionCount,
+        simTime:this.simTime
+      };
+    }
+  }
+
+  // ---------- UI / 렌더링 ----------
+  class GasModeUI{
+    constructor(engine,canvas,ctx){
+      this.engine=engine; this.canvas=canvas; this.ctx=ctx;
+    }
+    _fitCanvas(){
+      const wrap=this.canvas.parentElement;
+      const maxW=wrap.clientWidth-20, maxH=wrap.clientHeight-20;
+      const scale=Math.min(maxW/this.engine.containerW, maxH/this.engine.containerH, 1.6);
+      this.canvas.width=Math.max(100,Math.round(this.engine.containerW*scale));
+      this.canvas.height=Math.max(100,Math.round(this.engine.containerH*scale));
+      this._scale=scale;
+    }
+    render(){
+      this._fitCanvas();
+      const ctx=this.ctx, s=this._scale;
+      ctx.clearRect(0,0,this.canvas.width,this.canvas.height);
+      // 용기 경계
+      ctx.strokeStyle='#4fd1ff'; ctx.lineWidth=2;
+      ctx.strokeRect(1,1,this.engine.containerW*s-2,this.engine.containerH*s-2);
+      // 대표입자 경로표시: 입자보다 먼저 그려서 입자가 경로 위에 겹쳐 보이게 한다.
+      if(this.engine.trailMode && this.engine.trail.length>1){
+        ctx.strokeStyle='rgba(255,90,95,0.55)'; ctx.lineWidth=1.4;
+        ctx.beginPath();
+        const tr=this.engine.trail;
+        ctx.moveTo(tr[0].x*s,tr[0].y*s);
+        for(let i=1;i<tr.length;i++) ctx.lineTo(tr[i].x*s,tr[i].y*s);
+        ctx.stroke();
+      }
+      // 입자: 대표입자(단 하나)만 빨간색, 나머지는 기본 초록색
+      ctx.fillStyle='#34d399';
+      let rep=null;
+      for(const p of this.engine.particles){
+        if(p.isRepresentative){ rep=p; continue; } // 대표입자는 마지막에 별도로 그린다
+        ctx.beginPath();
+        ctx.arc(p.x*s,p.y*s,Math.max(1.5,p.radius*s),0,Math.PI*2);
+        ctx.fill();
+      }
+      if(rep){
+        ctx.fillStyle='#ff5a5f';
+        ctx.beginPath();
+        ctx.arc(rep.x*s,rep.y*s,Math.max(1.5,rep.radius*s),0,Math.PI*2);
+        ctx.fill();
+      }
+      this._updateStats();
+    }
+    _updateStats(){
+      // 사용자가 측정값 패널 안의 텍스트를 드래그로 선택 중이면 그 순간엔
+      // 텍스트를 갱신하지 않는다. 매 프레임 textContent를 덮어쓰면 선택이
+      // 즉시 풀려버려서 드래그로 숫자를 선택/복사할 수 없었기 때문이다.
+      const sel=window.getSelection();
+      if(sel && !sel.isCollapsed && sel.anchorNode && gasStatsPanel.contains(sel.anchorNode)){
+        return;
+      }
+      const st=this.engine.stats();
+      gasStatCount.textContent=st.count;
+      gasStatTemp.textContent=this.engine.temperature.toFixed(0);
+      gasStatSize.textContent=Math.round(this.engine.containerW)+' × '+Math.round(this.engine.containerH);
+      gasStatSpeed.textContent=st.avgSpeed.toFixed(2);
+      gasStatAvgKE.textContent=st.avgKE.toFixed(2);
+      gasStatTotalKE.textContent=st.totalKE.toFixed(1);
+      gasStatPressure.textContent=st.pressure.toFixed(4);
+      gasStatWallHits.textContent=st.wallCollisionCount;
+      gasStatTime.textContent=st.simTime.toFixed(1)+'s';
+    }
+  }
+
+  // ---------- 엔진/루프 관리 ----------
+  let gasEngine=null, gasUI=null;
+  let gasRafId=null, gasLastTs=null, gasAccumulator=0;
+
+  function gasTick(ts){
+    if(!window.gasModeActive) return; // 종료되면 스스로 루프를 끊는다 (기존 rAF와 완전 별개)
+    if(gasLastTs===null) gasLastTs=ts;
+    let dt=(ts-gasLastTs)/1000; gasLastTs=ts; dt=Math.min(dt,0.1);
+    if(gasEngine.running){
+      gasAccumulator+=dt;
+      let steps=0;
+      while(gasAccumulator>=GAS_PHYSICS_DT && steps<GAS_MAX_STEPS_PER_FRAME){
+        gasEngine.step(GAS_PHYSICS_DT);
+        gasAccumulator-=GAS_PHYSICS_DT;
+        steps++;
+      }
+    }
+    gasUI.render();
+    gasRafId=requestAnimationFrame(gasTick);
+  }
+
+  function syncControlsFromEngine(){
+    gasCountSlider.value=gasEngine.particleCount; gasCountNum.value=gasEngine.particleCount;
+    gasTempSlider.value=gasEngine.temperature; gasTempNum.value=gasEngine.temperature;
+    gasWidthSlider.value=gasEngine.containerW; gasWidthNum.value=gasEngine.containerW;
+    gasHeightSlider.value=gasEngine.containerH; gasHeightNum.value=gasEngine.containerH;
+    gasRepModeChk.checked=gasEngine.representativeMode;
+    gasTrailField.classList.toggle('hidden', !gasEngine.representativeMode);
+    gasTrailChk.checked=gasEngine.trailMode;
+  }
+
+  function startGasMode(){
+    window.gasModeActive=true;
+    gasOverlay.style.display='flex';
+    if(!gasEngine){
+      gasEngine=new GasSimulationEngine();
+      gasUI=new GasModeUI(gasEngine,gasCanvas,gasCtx);
+      syncControlsFromEngine();
+    }
+    gasLastTs=null; gasAccumulator=0;
+    if(gasRafId) cancelAnimationFrame(gasRafId);
+    gasRafId=requestAnimationFrame(gasTick);
+  }
+
+  function stopGasMode(){
+    window.gasModeActive=false;
+    gasOverlay.style.display='none';
+    if(gasRafId){ cancelAnimationFrame(gasRafId); gasRafId=null; }
+    // 기존 일반 모드의 상태에는 전혀 접근하지 않으므로, 여기서 별도로
+    // 복원할 것이 없다 — 기존 사이트는 애초에 건드려지지 않았다 (§3, §16).
+  }
+
+  function toggleGasMode(){
+    if(window.gasModeActive) stopGasMode(); else startGasMode();
+  }
+
+  // ---------- UI 컨트롤 이벤트 (기체 모드 내부에서만 동작) ----------
+  // 슬라이더와 숫자 입력을 하나로 묶어 서로 동기화한다.
+  // 숫자 입력은 값이 확정될 때(변경 완료 시) 범위를 벗어나면
+  // 최소값/최대값으로 자동 보정한다.
+  function wireGasControl(slider, numInput, min, max, onChange){
+    slider.addEventListener('input', ()=>{
+      const v=parseFloat(slider.value);
+      numInput.value=v;
+      onChange(v);
+    });
+    numInput.addEventListener('change', ()=>{
+      let v=parseFloat(numInput.value);
+      if(isNaN(v)) v=min;
+      if(v<min) v=min;
+      if(v>max) v=max;
+      numInput.value=v;
+      slider.value=v;
+      onChange(v);
+    });
+  }
+
+  wireGasControl(gasCountSlider, gasCountNum, 1, 3000, (n)=>{ if(gasEngine) gasEngine.setParticleCount(Math.round(n)); });
+  wireGasControl(gasTempSlider, gasTempNum, 0, 6000, (t)=>{ if(gasEngine) gasEngine.setTemperature(t); });
+  wireGasControl(gasWidthSlider, gasWidthNum, 80, 2400, (w)=>{ if(gasEngine) gasEngine.setContainerSize(w, gasEngine.containerH); });
+  wireGasControl(gasHeightSlider, gasHeightNum, 80, 1800, (h)=>{ if(gasEngine) gasEngine.setContainerSize(gasEngine.containerW, h); });
+
+  function setGasPauseBtnState(running){
+    gasPauseBtn.textContent=running?'일시정지':'재생';
+    gasPauseBtn.classList.toggle('danger', running);   // 실행 중일 때(누르면 정지) 빨간색
+    gasPauseBtn.classList.toggle('primary', !running);
+  }
+  gasPauseBtn.addEventListener('click',()=>{
+    if(!gasEngine) return;
+    gasEngine.running=!gasEngine.running;
+    setGasPauseBtnState(gasEngine.running);
+  });
+  gasResetBtn.addEventListener('click',()=>{
+    if(!gasEngine) return;
+    gasEngine.reset();
+    gasEngine.running=false;      // 초기화 시 자동으로 일시정지 상태로 전환
+    setGasPauseBtnState(false);
+  });
+
+  // 대표 입자 설정: 체크하면 입자들 중 정확히 하나만 빨간색으로 표시된다.
+  // 대표입자가 꺼지면 경로표시 체크박스도 함께 숨기고 끈다(대표입자가
+  // 없는 상태에서는 경로표시 자체가 의미가 없기 때문).
+  gasRepModeChk.addEventListener('change',()=>{
+    if(!gasEngine) return;
+    gasEngine.setRepresentativeMode(gasRepModeChk.checked);
+    gasTrailField.classList.toggle('hidden', !gasEngine.representativeMode);
+    gasTrailChk.checked=gasEngine.trailMode;
+  });
+
+  // 대표입자 경로표시: 체크하면 그 순간부터 대표입자가 지나온 자리가
+  // 선으로 남는다.
+  gasTrailChk.addEventListener('change',()=>{
+    if(!gasEngine) return;
+    gasEngine.setTrailMode(gasTrailChk.checked);
+  });
+
+  // ---------- 히든모드 단축키: Ctrl + ↑ ----------
+  // capture 단계에서 가로채어 preventDefault/stopPropagation 하므로
+  // - 브라우저 기본 스크롤 동작이 발생하지 않고
+  // - 포커스된 입력창(예: number input의 화살표 증가 동작)으로 전달되지 않으며
+  // - 기존 사이트의 다른 키 핸들러(존재하지 않지만)로도 전파되지 않는다.
+  document.addEventListener('keydown', function(e){
+    if(e.key!=='ArrowUp' && e.code!=='ArrowUp') return;
+    if(!e.ctrlKey) return;            // Ctrl이 눌리지 않은 일반 ↑ 키는 그대로 둔다
+    if(e.altKey || e.metaKey || e.shiftKey) return; // 다른 보조키가 섞인 조합은 건드리지 않는다
+    e.preventDefault();
+    e.stopPropagation();
+    if(typeof e.stopImmediatePropagation==='function') e.stopImmediatePropagation();
+    toggleGasMode();
+  }, true);
+
+  window.addEventListener('resize', function(){
+    if(window.gasModeActive && gasUI) gasUI.render();
+  });
+
+})();
+</script>
+</body>
+</html>
