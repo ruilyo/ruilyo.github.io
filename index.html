@@ -83,9 +83,11 @@
   .env-btn.active{border-color:var(--accel);color:var(--accel);background:rgba(52,211,153,0.08);}
   .env-hint{font-family:var(--mono);font-size:11px;color:var(--accel);padding:0 12px 8px;}
   #simCanvas{display:block;width:100%;height:46vh;min-height:360px;border-radius:8px;background:var(--bg);touch-action:none;cursor:grab;}
-  #infoTable{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px;}
-  #infoTable th,#infoTable td{text-align:center;padding:7px 4px;border-bottom:1px solid #17202c;}
-  #infoTable th{color:var(--text-dim);font-weight:500;font-size:10px;}
+  #infoTable{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11px;table-layout:fixed;}
+  #infoTable th,#infoTable td{text-align:center;padding:6px 2px;border-bottom:1px solid #17202c;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  #infoTable th{color:var(--text-dim);font-weight:500;font-size:9.5px;}
+  #infoTable td.obj-name{text-align:left;}
+  #panelInfo .panel-body{overflow-x:auto;}
   #infoTable td.obj-name{text-align:left;font-weight:700;}
   .dot{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:middle;}
   .motion-status{margin-top:14px;display:flex;flex-direction:column;gap:8px;}
@@ -276,7 +278,7 @@
     <div class="panel-block" id="panelInfo" data-order="2">
       <div class="panel-header"><h2>물체들의 실시간 물리량</h2><div class="hdr-btns"><button class="order-btn" data-move="up">▲</button><button class="order-btn" data-move="down">▼</button><button class="collapse-btn" data-toggle>숨기기 ▲</button></div></div>
       <div class="panel-body">
-        <table id="infoTable"><thead><tr><th>물체</th><th>질량 m (kg)</th><th>힘 |F| (N)</th><th>방향 θ (°)</th><th>가속도 크기 |a| (m/s²)</th><th>속력 |v| (m/s)</th><th>위치 x (m)</th><th>위치 y (m)</th></tr></thead><tbody id="infoTableBody"></tbody></table>
+        <table id="infoTable"><thead><tr><th>물체</th><th>m(kg)</th><th>|F|(N)</th><th>θ(°)</th><th>Fx(N)</th><th>Fy(N)</th><th>|a|(m/s²)</th><th>|v|(m/s)</th><th>vx(m/s)</th><th>vy(m/s)</th><th>x(m)</th><th>y(m)</th></tr></thead><tbody id="infoTableBody"></tbody></table>
         <div class="motion-status" id="motionStatus"></div>
       </div>
     </div>
@@ -1447,7 +1449,10 @@
       const tr=document.createElement('tr');
       tr.innerHTML='<td class="obj-name"><span class="dot" style="background:'+obj.color+'"></span>'+obj.name+'</td>'+
         '<td>'+obj.m.toFixed(2)+'</td>'+'<td>'+activeF.toFixed(2)+'</td>'+'<td>'+round2(obj.theta)+'</td>'+
-        '<td>'+aMag.toFixed(2)+'</td>'+'<td>'+vMag.toFixed(2)+'</td>'+'<td>'+obj.x.toFixed(2)+'</td>'+'<td>'+bottomY(obj).toFixed(2)+'</td>';
+        '<td>'+activeFx.toFixed(2)+'</td>'+'<td>'+activeFy.toFixed(2)+'</td>'+
+        '<td>'+aMag.toFixed(2)+'</td>'+'<td>'+vMag.toFixed(2)+'</td>'+
+        '<td>'+obj.vx.toFixed(2)+'</td>'+'<td>'+obj.vy.toFixed(2)+'</td>'+
+        '<td>'+obj.x.toFixed(2)+'</td>'+'<td>'+bottomY(obj).toFixed(2)+'</td>';
       infoTableBody.appendChild(tr);
       const md=describeMotion(obj);
       const row=document.createElement('div'); row.className='motion-row';
