@@ -237,7 +237,7 @@
       </div>
       <div class="env-controls" id="envControls4">
         <div class="env-item">구조물 종류
-          <select id="structTypeSelect"><option value="ramp">빗면</option><option value="hline">가로</option><option value="vline">세로</option><option value="anchor">고정점/실</option><option value="zone">마찰구간</option></select>
+          <select id="structTypeSelect"><option value="ramp">빗면</option><option value="hline">가로</option><option value="vline">세로</option><option value="anchor">고정점/실</option><option value="spring">용수철</option><option value="zone">마찰구간</option></select>
         </div>
         <span id="structRampFields" style="display:inline-flex;flex-wrap:wrap;gap:10px;align-items:center;">
           <span class="env-item">치수기준<select id="structDimBasisSelect"><option value="height">높이</option><option value="base">밑변</option><option value="hyp">빗변</option></select></span>
@@ -253,10 +253,13 @@
         <button class="env-btn" id="structModeBtn">구조물 추가</button>
         <button class="env-btn" id="structClearBtn">구조물 모두 지우기</button>
         <button class="env-btn hidden" id="stringModeBtn">실 연결</button>
+        <button class="env-btn hidden" id="springModeBtn">용수철 연결</button>
+        <span id="springFields" class="hidden" style="display:inline-flex;gap:10px;align-items:center;"><span class="env-item">탄성계수 k(N/m)<input type="number" id="springKInput" value="20" step="1" min="0.1"></span></span>
         <button class="env-btn" id="zoneClearBtn">마찰구간 모두 지우기</button>
       </div>
       <div class="env-hint hidden" id="structHint">클릭한 지점(정수 좌표로 스냅)이 기준점이 됩니다. 경사면은 직각 모서리, 발판/벽은 클릭 지점 그대로. 모두 공중에 띄울 수 있습니다.</div>
       <div class="env-hint hidden" id="stringHint">연결할 첫 번째 지점(고정점 또는 물체)을 클릭한 뒤, 두 번째 지점을 클릭하세요. 실 길이를 입력하면 연결됩니다.</div>
+      <div class="env-hint hidden" id="springHint">연결할 첫 번째 지점(물체, 고정점, 또는 벽/바닥/발판 위의 한 점)을 클릭한 뒤, 두 번째 지점을 클릭하세요. 자연길이를 입력하면 연결됩니다.</div>
       <div class="env-hint hidden" id="zoneHint">바닥/발판/경사면 위 시작점을 클릭한 뒤, 구간 길이(m)와 마찰계수를 입력하세요. 이미 만든 구간은 꾹 눌러서 드래그로만 옮길 수 있습니다.</div>
       <canvas id="simCanvas"></canvas>
     </div>
@@ -482,6 +485,10 @@
   const structClearBtn=document.getElementById('structClearBtn');
   const stringModeBtn=document.getElementById('stringModeBtn');
   const stringHint=document.getElementById('stringHint');
+  const springModeBtn=document.getElementById('springModeBtn');
+  const springHint=document.getElementById('springHint');
+  const springFields=document.getElementById('springFields');
+  const springKInput=document.getElementById('springKInput');
   // (zoneModeBtn was folded into structModeBtn — see structTypeSelect's
   // "마찰구간" option, dispatched in structModeBtn's click handler below.)
   const zoneClearBtn=document.getElementById('zoneClearBtn');
@@ -675,6 +682,21 @@
     strings.push(s);
     return s;
   }
+  // ===========================================================
+  // 용수철(SPRING) — 실과 마찬가지로 두 지점(고정점 또는 물체)을 잇는
+  // 독립적인 연결이지만, 물리는 완전히 다르다: 훅의 법칙(F=-kx)에 따라
+  // 자연길이보다 늘어나면 당기고, 자연길이보다 압축되면 밀어낸다(실은
+  // 당기기만 가능). 늘어나거나 압축된 정도에 항상 비례해서 힘이
+  // 작용하므로 실의 "팽팽함/느슨함" 같은 두 가지 상태 구분이 없다.
+  // 물체끼리는 물론, 벽/바닥/발판 위의 한 점에도 설치할 수 있다 — 그
+  // 지점은 내부적으로 고정점(anchor)으로 만들어져서 그 자리에 고정된다.
+  // ===========================================================
+  let springs=[], springIdCounter=0;
+  function addSpring(aType,aId,bType,bId,naturalLength,k){
+    const s={id:springIdCounter++, aType, aId, bType, bId, naturalLength:Math.max(0.05,naturalLength), k:Math.max(0.01,k)};
+    springs.push(s);
+    return s;
+  }
   // A string's endpoint's CURRENT world position — a fixed point's own
   // (x,y) if it's an anchor, or wherever that object currently is.
   function stringEndPos(type,id){
@@ -694,6 +716,8 @@
   function stringsOnObject(objId){ return strings.filter(s=>(s.aType==='object'&&s.aId===objId)||(s.bType==='object'&&s.bId===objId)); }
   function removeStringsForObject(objId){ strings=strings.filter(s=>!((s.aType==='object'&&s.aId===objId)||(s.bType==='object'&&s.bId===objId))); }
   function removeStringsForAnchor(anchorId){ strings=strings.filter(s=>!((s.aType==='anchor'&&s.aId===anchorId)||(s.bType==='anchor'&&s.bId===anchorId))); }
+  function removeSpringsForObject(objId){ springs=springs.filter(s=>!((s.aType==='object'&&s.aId===objId)||(s.bType==='object'&&s.bId===objId))); }
+  function removeSpringsForAnchor(anchorId){ springs=springs.filter(s=>!((s.aType==='anchor'&&s.aId===anchorId)||(s.bType==='anchor'&&s.bId===anchorId))); }
   function heightFromBasis(basis,len,angleDeg){ const rad=angleDeg*Math.PI/180; if(basis==='base') return len*Math.tan(rad); if(basis==='hyp') return len*Math.sin(rad); return len; }
   function removeZonesForStructure(id){ frictionZones=frictionZones.filter(z=>!(z.kind==='structure'&&z.structureId===id)); }
   function pointInTriangle(px,py,x1,y1,x2,y2,x3,y3){
@@ -757,6 +781,7 @@
     if(objects.length<=1) return;
     objects=objects.filter(o=>o.id!==id); delete history[id]; preRunSnapshot=null;
     removeStringsForObject(id);
+    removeSpringsForObject(id);
     renderObjectPanels(); renderAllLegends();
   }
 
@@ -1520,8 +1545,34 @@
   // never adds energy — leaving them free to keep moving TOGETHER under
   // whatever their combined net force actually is, with no impulse and no
   // bounce.
+  // 용수철의 힘(훅의 법칙, F=-kx)은 그 순간의 위치만으로 정확히 계산되는
+  // "직접적인" 힘이지, 접촉힘·장력처럼 다른 물체의 결과를 보며 여러 번
+  // 맞춰나가야 하는 제약이 아니다 — 그래서 반복 루프 밖에서 딱 한 번만
+  // 계산한다(만약 반복 루프 안에서 매번 새로 더하면, 반복 횟수만큼
+  // 스프링 힘이 몇 배로 부풀려지는 완전히 다른 종류의 버그가 생긴다).
+  // 이렇게 한 번 계산된 값이 접촉힘·장력 반복 계산에 자연스럽게
+  // 반영되어 서로 일관되게 수렴한다.
+  function applySpringForces(){
+    springs.forEach(s=>{
+      s.currentForce=0;
+      const A=stringEndObj(s.aType,s.aId), B=stringEndObj(s.bType,s.bId);
+      const posA=stringEndPos(s.aType,s.aId), posB=stringEndPos(s.bType,s.bId);
+      if(!posA || !posB) return;
+      if((A&&A.dragging)||(B&&B.dragging)) return;
+      const dx=posB.x-posA.x, dy=posB.y-posA.y, dist=Math.hypot(dx,dy)||1e-6;
+      const nx=dx/dist, ny=dy/dist;
+      const ext=dist-s.naturalLength; // >0: 자연길이보다 늘어남(당기는 힘), <0: 압축(밀어내는 힘)
+      const Fmag=s.k*ext;
+      s.currentForce=Fmag;
+      // 늘어났으면(ext>0) B를 A 쪽으로 당기고 A를 B 쪽으로 당긴다 —
+      // 압축이면(ext<0) 정확히 반대로 서로를 밀어낸다.
+      if(A){ A.contactAx+=(Fmag/A.m)*nx; A.contactAy+=(Fmag/A.m)*ny; }
+      if(B){ B.contactAx-=(Fmag/B.m)*nx; B.contactAy-=(Fmag/B.m)*ny; }
+    });
+  }
   function applyRestingContactForces(){
     objects.forEach(o=>{ o.contactAx=0; o.contactAy=0; });
+    applySpringForces();
     if(objCollisionOff && strings.length===0) return;
     // 접촉힘(물체끼리 맞닿아 서로 밀기)과 실의 장력은 둘 다 같은
     // contactAx/Ay 누산기에 힘을 더한다. 만약 이 둘을 완전히 따로(접촉힘
@@ -1881,6 +1932,39 @@
         ctx.fillStyle='#c3cbd8'; ctx.fillText(label,mx,my);
       }
     });
+    // 용수철: 지그재그(코일) 모양으로 그려서 실과 구분한다. 늘어나면
+    // 주황, 압축되면 청록으로 색을 살짝 다르게 해서 상태를 한눈에
+    // 보여준다.
+    springs.forEach(s=>{
+      const posA=stringEndPos(s.aType,s.aId), posB=stringEndPos(s.bType,s.bId);
+      if(!posA||!posB) return;
+      const pa=worldToScreen(posA.x,posA.y,geom), pb=worldToScreen(posB.x,posB.y,geom);
+      const ddx=pb.sx-pa.sx, ddy=pb.sy-pa.sy, plen=Math.hypot(ddx,ddy)||1e-6;
+      const ux=ddx/plen, uy=ddy/plen, pxn=-uy, pyn=ux; // 진행/수직 단위벡터
+      const coils=10, amp=8;
+      const ext=(s.currentForce||0);
+      ctx.strokeStyle = ext>0.05?'#f59e0b':(ext<-0.05?'#22d3ee':'#8a94a6');
+      ctx.lineWidth=1.6;
+      ctx.beginPath(); ctx.moveTo(pa.sx,pa.sy);
+      const straightFrac=0.08; // 양 끝은 살짝 곧게, 가운데만 코일
+      for(let k=0;k<=coils;k++){
+        const t=straightFrac+(1-2*straightFrac)*(k/coils);
+        const side=(k%2===0)?1:-1;
+        const bx=pa.sx+ux*plen*t + pxn*amp*side*(k>0&&k<coils?1:0);
+        const by=pa.sy+uy*plen*t + pyn*amp*side*(k>0&&k<coils?1:0);
+        ctx.lineTo(bx,by);
+      }
+      ctx.lineTo(pb.sx,pb.sy);
+      ctx.stroke();
+      if(showLabels && Math.abs(ext)>0.05){
+        const mx=(pa.sx+pb.sx)/2, my=(pa.sy+pb.sy)/2;
+        ctx.font='10px var(--mono)'; ctx.textAlign='center'; ctx.textBaseline='middle';
+        const label='F='+ext.toFixed(1)+'N';
+        const tw=ctx.measureText(label).width;
+        ctx.fillStyle='rgba(10,14,20,0.75)'; ctx.fillRect(mx-tw/2-4,my-8,tw+8,16);
+        ctx.fillStyle=ctx.strokeStyle; ctx.fillText(label,mx,my);
+      }
+    });
     frictionZones.filter(z=>z.kind==='ground').forEach(z=>{
       const p1=worldToScreen(z.x1,0,geom), p2=worldToScreen(z.x2,0,geom);
       ctx.strokeStyle='rgba(255,90,95,0.8)'; ctx.lineWidth=5; ctx.lineCap='round';
@@ -2235,6 +2319,7 @@
         addRamp(w.x, w.y, heightFromBasis(structDimBasisSelect.value,len,angleDeg), angleDeg, structFlipChk.checked, true, newStructCollisionType, newStructRestitutionOwn);
       } else if(type==='hline'){ addHLine(w.x,w.y,Math.max(0.5,parseFloat(structLenInput.value)||1),true,newStructCollisionType,newStructRestitutionOwn); }
       else if(type==='anchor'){ addAnchor(w.x,w.y,true); }
+      else if(type==='spring'||type==='zone'){ /* 이 타입들은 각자 전용 모드('spring'/'zone')에서만 배치되고, 'struct' 모드로는 절대 안 만들어져야 한다 */ }
       else { addVLine(w.x,w.y,Math.max(0.5,parseFloat(structLenInput.value)||1),true,newStructCollisionType,newStructRestitutionOwn); }
       return;
     }
@@ -2269,6 +2354,59 @@
       // 막혀버린다. 실로 연결되는 순간 그 표면 구속은 풀어줘야 한다.
       if(first.type==='object'){ const o=objects.find(x=>x.id===first.id); if(o) o.onSurface=null; }
       if(hit.type==='object'){ const o=objects.find(x=>x.id===hit.id); if(o) o.onSurface=null; }
+      return;
+    }
+    if(interactionMode==='spring'){
+      // 용수철 연결: 물체·고정점은 실과 동일하게, 벽/바닥/발판(빗면·가로·
+      // 세로)은 클릭한 지점 그대로 그 자리에 고정점을 새로 만들어서 쓴다
+      // — 그래야 "벽이나 바닥에 용수철을 설치"하는 게 실제로 그 좌표에
+      // 고정된 한 점으로 동작한다.
+      function closestPointOnStructure(s,x,y){
+        if(s.type==='hline'){ const cx=Math.max(s.x,Math.min(s.x+s.length,x)); return {x:cx,y:s.y}; }
+        if(s.type==='vline'){ const cy=Math.max(s.yBottom,Math.min(s.yBottom+s.length,y)); return {x:s.x,y:cy}; }
+        if(s.type==='ramp'){
+          const x1=s.x1,y1=s.yBase,x2=s.x2,y2=s.yBase+s.height;
+          const dx=x2-x1,dy=y2-y1,lenSq=dx*dx+dy*dy||1e-9;
+          let t=((x-x1)*dx+(y-y1)*dy)/lenSq; t=Math.max(0,Math.min(1,t));
+          return {x:x1+t*dx,y:y1+t*dy};
+        }
+        return null;
+      }
+      function hitSpringEndpointAt(x,y){
+        for(let i=objects.length-1;i>=0;i--){
+          const o=objects[i], half=OBJ_SIZE_M/2;
+          if(Math.hypot(x-o.x,y-o.y)<Math.max(half,0.5)) return {type:'object',id:o.id};
+        }
+        for(let i=structures.length-1;i>=0;i--){
+          const s=structures[i];
+          if(s.type==='anchor' && Math.hypot(x-s.x,y-s.y)<0.5) return {type:'anchor',id:s.id};
+        }
+        for(let i=structures.length-1;i>=0;i--){
+          const s=structures[i];
+          if(s.type==='hline'||s.type==='vline'||s.type==='ramp'){
+            if(hitTestStructure(s,x,y,0.4)){
+              const p=closestPointOnStructure(s,x,y);
+              const a=addAnchor(p.x,p.y,false); a.showTension=true;
+              return {type:'anchor',id:a.id};
+            }
+          }
+        }
+        return null;
+      }
+      const shit=hitSpringEndpointAt(w.x,w.y);
+      if(!shit){ stringPending=null; return; }
+      if(!stringPending){ stringPending=shit; return; }
+      if(stringPending.type===shit.type && stringPending.id===shit.id){ stringPending=null; return; }
+      const sfirst=stringPending; stringPending=null;
+      const sposA=stringEndPos(sfirst.type,sfirst.id), sposB=stringEndPos(shit.type,shit.id);
+      const sDefaultLen=sposA&&sposB?Math.hypot(sposB.x-sposA.x,sposB.y-sposA.y):3;
+      const sls=window.prompt('용수철 자연길이(m)를 입력하세요', sDefaultLen.toFixed(2));
+      if(sls===null) return;
+      const snl=parseFloat(sls); if(isNaN(snl)||snl<=0){ alert('자연길이는 0보다 큰 숫자여야 합니다.'); return; }
+      const kVal=Math.max(0.01,parseFloat(springKInput.value)||20);
+      addSpring(sfirst.type, sfirst.id, shit.type, shit.id, snl, kVal);
+      if(sfirst.type==='object'){ const o=objects.find(x=>x.id===sfirst.id); if(o) o.onSurface=null; }
+      if(shit.type==='object'){ const o=objects.find(x=>x.id===shit.id); if(o) o.onSurface=null; }
       return;
     }
     if(interactionMode==='zone'){
@@ -2429,7 +2567,7 @@
         if(s.type==='anchor'){
           const linkedCount=strings.filter(x=>(x.aType==='anchor'&&x.aId===s.id)||(x.bType==='anchor'&&x.bId===s.id)).length;
           const msg=linkedCount>0?('이 고정점을 삭제할까요? 연결된 실 '+linkedCount+'개도 함께 끊어집니다.'):'이 고정점을 삭제할까요?';
-          if(confirm(msg)){ removeStringsForAnchor(s.id); structures.splice(i,1); }
+          if(confirm(msg)){ removeStringsForAnchor(s.id); removeSpringsForAnchor(s.id); structures.splice(i,1); }
           return;
         }
         if(confirm('이 구조물을 삭제할까요?')){ structures.splice(i,1); removeZonesForStructure(s.id); }
@@ -2442,8 +2580,10 @@
     interactionMode=mode; zonePending=null; stringPending=null;
     structModeBtn.classList.toggle('active', mode==='struct'||mode==='zone');
     stringModeBtn.classList.toggle('active', mode==='string');
+    springModeBtn.classList.toggle('active', mode==='spring');
     structHint.classList.toggle('hidden', mode!=='struct');
     stringHint.classList.toggle('hidden', mode!=='string');
+    springHint.classList.toggle('hidden', mode!=='spring');
     zoneHint.classList.toggle('hidden', mode!=='zone');
   }
   // "구조물 종류"에서 무엇을 골랐는지에 따라 이 버튼 하나로 구조물
@@ -2451,23 +2591,36 @@
   // 마찰구간도 결국 "구조물" 범주 안에서 다루는 것이 자연스럽다.
   structModeBtn.addEventListener('click', ()=>{
     if(editLocked) return;
+    if(structTypeSelect.value==='spring') return; // 이 버튼은 용수철일 땐 숨겨져 있지만, 만일을 대비한 방어
     const targetMode=structTypeSelect.value==='zone'?'zone':'struct';
     setInteractionMode(interactionMode===targetMode?'drag':targetMode);
   });
   stringModeBtn.addEventListener('click', ()=>{ if(!editLocked) setInteractionMode(interactionMode==='string'?'drag':'string'); });
-  structClearBtn.addEventListener('click', ()=>{ if(editLocked) return; structures=[]; strings=[]; frictionZones=frictionZones.filter(z=>z.kind!=='structure'); });
+  springModeBtn.addEventListener('click', ()=>{ if(!editLocked) setInteractionMode(interactionMode==='spring'?'drag':'spring'); });
+  structClearBtn.addEventListener('click', ()=>{ if(editLocked) return; structures=[]; strings=[]; springs=[]; frictionZones=frictionZones.filter(z=>z.kind!=='structure'); });
   zoneClearBtn.addEventListener('click', ()=>{ if(editLocked) return; frictionZones=[]; });
   structTypeSelect.addEventListener('change', ()=>{
-    const type=structTypeSelect.value, isRamp=type==='ramp', isAnchor=type==='anchor', isZone=type==='zone';
+    const type=structTypeSelect.value, isRamp=type==='ramp', isAnchor=type==='anchor', isZone=type==='zone', isSpring=type==='spring';
     structRampFields.classList.toggle('hidden', !isRamp);
-    structLineFields.classList.toggle('hidden', isRamp || isAnchor || isZone);
-    structCollisionTypeGroup.classList.toggle('hidden', isAnchor || isZone);
-    if(isAnchor || isZone) structRestitutionWrap.style.display='none';
+    structLineFields.classList.toggle('hidden', isRamp || isAnchor || isZone || isSpring);
+    structCollisionTypeGroup.classList.toggle('hidden', isAnchor || isZone || isSpring);
+    if(isAnchor || isZone || isSpring) structRestitutionWrap.style.display='none';
     // "실 연결"은 고정점/실을 다루는 기능이므로, 구조물 종류에서 다른
     // 걸 고르면 굳이 보일 필요가 없다 — 다른 걸 고른 채로 "실 연결"
     // 모드에 들어가 있었다면 그 모드도 함께 빠져나온다.
     stringModeBtn.classList.toggle('hidden', !isAnchor);
     if(!isAnchor && interactionMode==='string') setInteractionMode('drag');
+    // "용수철"도 같은 방식 — 선택했을 때만 "용수철 연결" 버튼과
+    // 탄성계수 입력칸이 보인다. 실과 달리 용수철은 "실 연결"의 고정점
+    // 같은 별도 배치 구조물이 필요 없이 순수하게 두 지점을 잇기만
+    // 하므로, "구조물 추가" 버튼 자체는 이때 아무 역할이 없다 — 그냥
+    // 두면 눌렀을 때 처리되지 않은 타입이 엉뚱하게 기본값(세로/벽)으로
+    // 새어나가 버리므로, 아예 숨겨서 그 경로 자체를 막는다.
+    springModeBtn.classList.toggle('hidden', !isSpring);
+    springFields.classList.toggle('hidden', !isSpring);
+    structModeBtn.classList.toggle('hidden', isSpring);
+    if(isSpring && interactionMode==='struct') setInteractionMode('drag');
+    if(!isSpring && interactionMode==='spring') setInteractionMode('drag');
     // "구조물 종류"에서 다른 걸 고르면(마찰구간이 아니게 되면) 혹시
     // 마찰구간 배치 모드에 들어가 있었더라도 함께 빠져나온다 — 반대로
     // 마찰구간에서 다른 걸로 바꿔도 이미 시작한 모드는 자연스럽게 끝낸다.
@@ -2612,7 +2765,7 @@
     running=false; simTime=0; lastTs=null; offscreenSince={}; preRunSnapshot=null;
     startPauseBtn.classList.remove('running'); startPauseBtn.textContent='▶ 운동 시작';
     miniStartPause.classList.remove('running'); miniStartPause.textContent='▶';
-    objects=[]; history={}; objCounter=0; structures=[]; structIdCounter=0; frictionZones=[]; strings=[]; stringIdCounter=0;
+    objects=[]; history={}; objCounter=0; structures=[]; structIdCounter=0; frictionZones=[]; strings=[]; stringIdCounter=0; springs=[]; springIdCounter=0;
     collisionLog=[]; resetCollisionPanel(); createObject();
     renderObjectPanels(); renderAllLegends(); refreshInfoTable();
   });
@@ -2621,7 +2774,7 @@
     running=false; simTime=0; lastTs=null; offscreenSince={}; preRunSnapshot=null;
     startPauseBtn.classList.remove('running'); startPauseBtn.textContent='▶ 운동 시작';
     miniStartPause.classList.remove('running'); miniStartPause.textContent='▶';
-    objects=[]; history={}; objCounter=0; structures=[]; structIdCounter=0; frictionZones=[]; strings=[]; stringIdCounter=0;
+    objects=[]; history={}; objCounter=0; structures=[]; structIdCounter=0; frictionZones=[]; strings=[]; stringIdCounter=0; springs=[]; springIdCounter=0;
     friction=0; frictionInput.value='0'; GRAVITY=9.8; gravitySelect.value='9.8'; gravityNumInput.value='9.8'; gravityNumInput.style.display='none';
     groundCollisionType='0'; groundCollisionTypeSelect.value='0'; groundRestitutionWrap.style.display='none'; groundRestitutionOwn=0.6; groundRestitutionInput.value='0.6';
     newStructCollisionType='1'; structCollisionTypeSelect.value='1'; structRestitutionWrap.style.display='none'; newStructRestitutionOwn=0.6; structRestitutionInput.value='0.6';
@@ -2671,6 +2824,13 @@
           length:s.length
         };
       }),
+      springs: springs.map(function(s){
+        return {
+          aType:s.aType, aIndex: s.aType==='anchor'?structures.findIndex(function(x){return x.id===s.aId;}):objects.findIndex(function(x){return x.id===s.aId;}),
+          bType:s.bType, bIndex: s.bType==='anchor'?structures.findIndex(function(x){return x.id===s.bId;}):objects.findIndex(function(x){return x.id===s.bId;}),
+          naturalLength:s.naturalLength, k:s.k
+        };
+      }),
       graphs: graphs.map(function(g){ return {xKey:g.xKey,yKey:g.yKey,name:g.name,deletable:g.deletable,xStep:g.xStep,yStep:g.yStep}; })
     };
   }
@@ -2718,6 +2878,11 @@
       const aId=s.aType==='anchor'?(structures[s.aIndex]&&structures[s.aIndex].id):(objects[s.aIndex]&&objects[s.aIndex].id);
       const bId=s.bType==='anchor'?(structures[s.bIndex]&&structures[s.bIndex].id):(objects[s.bIndex]&&objects[s.bIndex].id);
       if(aId!==undefined && aId!==null && bId!==undefined && bId!==null) addStringLink(s.aType,aId,s.bType,bId,s.length);
+    });
+    (state.springs||[]).forEach(function(s){
+      const aId=s.aType==='anchor'?(structures[s.aIndex]&&structures[s.aIndex].id):(objects[s.aIndex]&&objects[s.aIndex].id);
+      const bId=s.bType==='anchor'?(structures[s.bIndex]&&structures[s.bIndex].id):(objects[s.bIndex]&&objects[s.bIndex].id);
+      if(aId!==undefined && aId!==null && bId!==undefined && bId!==null) addSpring(s.aType,aId,s.bType,bId,s.naturalLength,s.k);
     });
     if(state.graphs&&state.graphs.length) state.graphs.forEach(function(g){ addGraph(g.xKey,g.yKey,g.name,g.deletable!==false,g.xStep,g.yStep); });
     else buildDefaultGraphs();
