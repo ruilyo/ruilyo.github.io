@@ -34,6 +34,10 @@
   .settings-head h2{font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin:0;font-family:var(--mono);}
   #objectsPanel{display:flex;flex-direction:column;gap:12px;max-height:56vh;overflow-y:auto;padding-right:4px;}
   .obj-card{border:1px solid var(--border);background:var(--panel-2);border-radius:8px;padding:12px;}
+  .obj-card.dragging-card{opacity:0.5;}
+  .obj-card.drop-target{outline:2px dashed var(--accent);outline-offset:2px;}
+  .obj-card-head{cursor:grab;}
+  .obj-card-head:active{cursor:grabbing;}
   .obj-card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
   .obj-collapse-btn{background:none;border:none;color:var(--text-dim);font-size:12px;line-height:1;padding:2px 4px;cursor:pointer;}
   .obj-collapse-btn:hover{color:var(--text);}
@@ -87,9 +91,9 @@
   .env-btn.active{border-color:var(--accel);color:var(--accel);background:rgba(52,211,153,0.08);}
   .env-hint{font-family:var(--mono);font-size:11px;color:var(--accel);padding:0 12px 8px;}
   #simCanvas{display:block;width:100%;height:46vh;min-height:360px;border-radius:8px;background:var(--bg);touch-action:none;cursor:grab;}
-  #infoTable{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11px;table-layout:fixed;}
-  #infoTable th,#infoTable td{text-align:center;padding:6px 2px;border-bottom:1px solid #17202c;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  #infoTable th{color:var(--text-dim);font-weight:500;font-size:9.5px;}
+  #infoTable{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:10.5px;table-layout:fixed;}
+  #infoTable th,#infoTable td{text-align:center;padding:6px 1px;border-bottom:1px solid #17202c;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  #infoTable th{color:var(--text-dim);font-weight:500;font-size:9px;}
   #infoTable td.obj-name{text-align:left;}
   #panelInfo .panel-body{overflow-x:auto;}
   #infoTable td.obj-name{text-align:left;font-weight:700;}
@@ -285,9 +289,10 @@
       </div>
     </div>
     <div class="panel-block" id="panelInfo" data-order="2">
-      <div class="panel-header"><h2>물체들의 실시간 물리량</h2><div class="hdr-btns"><button class="order-btn" data-move="up">▲</button><button class="order-btn" data-move="down">▼</button><button class="collapse-btn" data-toggle>숨기기 ▲</button></div></div>
+      <div class="panel-header"><h2>물체들의 실시간 물리량</h2><div class="hdr-btns"><button class="order-btn" id="infoColsBtn">열 선택</button><button class="order-btn" data-move="up">▲</button><button class="order-btn" data-move="down">▼</button><button class="collapse-btn" data-toggle>숨기기 ▲</button></div></div>
       <div class="panel-body">
-        <table id="infoTable"><thead><tr><th>물체</th><th>m(kg)</th><th>F(N)</th><th>θ(°)</th><th>Fx(N)</th><th>Fy(N)</th><th>a(m/s²)</th><th>v(m/s)</th><th>vx(m/s)</th><th>vy(m/s)</th><th>x(m)</th><th>y(m)</th></tr></thead><tbody id="infoTableBody"></tbody></table>
+        <div class="hidden" id="infoColsPanel" style="display:flex;flex-wrap:wrap;gap:4px 14px;padding:8px 2px 12px;font-family:var(--mono);font-size:11px;color:var(--text-dim);"></div>
+        <table id="infoTable"><thead><tr id="infoTableHeadRow"></tr></thead><tbody id="infoTableBody"></tbody></table>
         <div class="motion-status" id="motionStatus"></div>
       </div>
     </div>
@@ -399,7 +404,8 @@
   const AXIS_LABELS={ t:'시간 t (s)', x:'위치 x (m)', y:'위치 y (m)', vx:'속도 vx (m/s)', vy:'속도 vy (m/s)', vMag:'속력 v (m/s)',
     ax:'가속도 ax (m/s2)', ay:'가속도 ay (m/s2)', aMag:'가속도 크기 a (m/s2)', Fx:'가한 힘 Fx (N)', Fy:'가한 힘 Fy (N)',
     Fnetx:'알짜힘 Fnetx (N)', Fnety:'알짜힘 Fnety (N)', FnetMag:'알짜힘 크기 |Fnet| (N)', px:'운동량 px (kg m/s)', py:'운동량 py (kg m/s)',
-    N:'수직항력 N (N)', f:'마찰력 f (N)', K:'운동에너지 K (J)', Ug:'위치에너지 Ug (J)', E:'역학적에너지 E (J)', Jx:'충격량 Jx (kg m/s)', J:'충격량 크기 J (kg m/s)' };
+    N:'수직항력 N (N)', f:'마찰력 f (N)', K:'운동에너지 K (J)', Ug:'중력 위치에너지 Ug (J)', Uspring:'탄성 위치에너지 Uspring (J)', E:'역학적에너지 E (J)', Jx:'충격량 Jx (kg m/s)', J:'충격량 크기 J (kg m/s)',
+    T:'실 장력 T (N)', Fspring:'용수철 탄성력 F (N)', omega:'각속도 ω (rad/s)', thetaP:'연직선과 이루는 각 θ (°)' };
   const STRUCT_LINE_COLOR='#e7edf5', STRUCT_LINE_WIDTH=3;
   const DEFAULT_OBJ={ m:5, F:0, theta:0, vx:0, vy:0 };
 
@@ -418,6 +424,7 @@
   let lastGeom=null, graphs=[], graphIdCounter=0, offscreenSince={};
   let showLabels=true, showVelVec=true, showNormalVec=false;
   let zoomedGraphId=null, preRunSnapshot=null;
+  let infoTableSelecting=false;
 
   function viewRangeX(){ return mapCellsX*gridSpacing; }
   function viewRangeY(){ return mapCellsY*vGridSpacing; }
@@ -434,11 +441,26 @@
   const clearAllBtn=document.getElementById('clearAllBtn');
   const simWrap=document.getElementById('simWrap');
   const simCanvas=document.getElementById('simCanvas');
+  // 물체 카드를 헤더로 드래그해 순서를 바꾸거나, 정보 표의 텍스트를
+  // 드래그해서 선택할 때, 시뮬레이션 창 위로 잘못 끌려 들어가 거기에
+  // "드롭"되는 일이 없도록 막는다. dragover에서 일부러 preventDefault를
+  // 호출하지 않는 것이 핵심이다 — HTML5 드래그앤드롭은 dragover에서
+  // preventDefault를 호출해야 그 요소가 드롭을 "허용"하게 되므로,
+  // 아무것도 안 하면(=허용 신호를 안 주면) 브라우저가 알아서 드롭을
+  // 거부한다. 혹시라도 drop이 발생하는 경우를 위한 안전망만 남겨둔다.
+  simCanvas.addEventListener('drop', evt=>{ evt.preventDefault(); });
   const simCtx=simCanvas.getContext('2d');
   const simClock=document.getElementById('simClock');
   const fullscreenBtn=document.getElementById('fullscreenBtn');
   const envControlGroups=[document.getElementById('envControls1'), document.getElementById('envControls2'), document.getElementById('envControls3'), document.getElementById('envControls4')];
   const infoTableBody=document.getElementById('infoTableBody');
+  const infoTableHeadRow=document.getElementById('infoTableHeadRow');
+  const infoColsBtn=document.getElementById('infoColsBtn');
+  const infoColsPanel=document.getElementById('infoColsPanel');
+  // 정보 표 값을 마우스로 드래그해서 선택·복사할 수 있도록, 선택하는
+  // 동안은 실시간 갱신을 잠시 멈춘다(위 refreshInfoTable 참고).
+  infoTableBody.addEventListener('mousedown', ()=>{ infoTableSelecting=true; });
+  document.addEventListener('mouseup', ()=>{ infoTableSelecting=false; });
   const motionStatus=document.getElementById('motionStatus');
   const collisionEmpty=document.getElementById('collisionEmpty');
   const collisionDetail=document.getElementById('collisionDetail');
@@ -714,6 +736,7 @@
   // Every string this object is currently an endpoint of (a middle link
   // in a chain, e.g., is an endpoint of TWO strings at once).
   function stringsOnObject(objId){ return strings.filter(s=>(s.aType==='object'&&s.aId===objId)||(s.bType==='object'&&s.bId===objId)); }
+  function springsOnObject(objId){ return springs.filter(s=>(s.aType==='object'&&s.aId===objId)||(s.bType==='object'&&s.bId===objId)); }
   function removeStringsForObject(objId){ strings=strings.filter(s=>!((s.aType==='object'&&s.aId===objId)||(s.bType==='object'&&s.bId===objId))); }
   function removeStringsForAnchor(anchorId){ strings=strings.filter(s=>!((s.aType==='anchor'&&s.aId===anchorId)||(s.bType==='anchor'&&s.bId===anchorId))); }
   function removeSpringsForObject(objId){ springs=springs.filter(s=>!((s.aType==='object'&&s.aId===objId)||(s.bType==='object'&&s.bId===objId))); }
@@ -776,7 +799,7 @@
     preRunSnapshot=null;
     return obj;
   }
-  function emptyHistory(){ return {t:[],x:[],y:[],vx:[],vy:[],vMag:[],ax:[],ay:[],aMag:[],Fx:[],Fy:[],Fnetx:[],Fnety:[],FnetMag:[],px:[],py:[],N:[],f:[],K:[],Ug:[],E:[],Jx:[],J:[]}; }
+  function emptyHistory(){ return {t:[],x:[],y:[],vx:[],vy:[],vMag:[],ax:[],ay:[],aMag:[],Fx:[],Fy:[],Fnetx:[],Fnety:[],FnetMag:[],px:[],py:[],N:[],f:[],K:[],Ug:[],Uspring:[],E:[],Jx:[],J:[],T:[],Fspring:[],omega:[],thetaP:[]}; }
   function deleteObject(id){
     if(objects.length<=1) return;
     objects=objects.filter(o=>o.id!==id); delete history[id]; preRunSnapshot=null;
@@ -866,18 +889,51 @@
     syncField(obj.id,'aMag', obj.m>0?obj.F/obj.m:0);
   }
 
+  function duplicateObject(srcId){
+    const src=objects.find(o=>o.id===srcId); if(!src) return;
+    createObject({
+      m:src.m, F:src.F, theta:src.theta, x:src.x+1, y:src.y,
+      vx:src.vx, vy:src.vy, showVectors:src.showVectors,
+      collisionType:src.collisionType, restitutionOwn:src.restitutionOwn,
+      forceDuration:isFinite(src.forceDuration)?src.forceDuration:null
+    });
+    renderObjectPanels(); renderAllLegends();
+  }
   function renderObjectPanels(){
     objectsPanel.innerHTML='';
-    objects.forEach(obj=>{
+    objects.forEach((obj,objIdx)=>{
       const card=document.createElement('div'); card.className='obj-card';
+      card.dataset.objId=String(obj.id);
       const head=document.createElement('div'); head.className='obj-card-head';
+      head.draggable=true;
+      head.title='여기를 드래그하면 물체 순서를 바꿀 수 있습니다';
+      // 카드 "헤더"만 드래그 가능하게 한다 — 카드 전체를 드래그 대상으로
+      // 하면 안에 있는 입력칸들을 클릭/선택하는 조작과 자꾸 충돌한다.
+      head.addEventListener('dragstart', evt=>{ evt.dataTransfer.setData('text/plain', String(obj.id)); evt.dataTransfer.effectAllowed='move'; card.classList.add('dragging-card'); });
+      head.addEventListener('dragend', ()=>{ card.classList.remove('dragging-card'); });
+      card.addEventListener('dragover', evt=>{ evt.preventDefault(); evt.dataTransfer.dropEffect='move'; card.classList.add('drop-target'); });
+      card.addEventListener('dragleave', ()=>{ card.classList.remove('drop-target'); });
+      card.addEventListener('drop', evt=>{
+        evt.preventDefault(); card.classList.remove('drop-target');
+        const draggedId=parseFloat(evt.dataTransfer.getData('text/plain'));
+        if(isNaN(draggedId) || draggedId===obj.id) return;
+        const fromIdx=objects.findIndex(o=>o.id===draggedId);
+        const toIdx=objects.findIndex(o=>o.id===obj.id);
+        if(fromIdx<0||toIdx<0) return;
+        const [moved]=objects.splice(fromIdx,1);
+        objects.splice(toIdx,0,moved);
+        renderObjectPanels(); renderAllLegends();
+      });
       head.innerHTML='<div class="obj-tag"><span class="obj-swatch" style="background:'+obj.color+'"></span>'+obj.name+'</div>';
+      const dupBtn=document.createElement('button'); dupBtn.className='obj-del'; dupBtn.textContent='복제';
+      dupBtn.title='이 물체와 똑같은 설정으로 새 물체를 만듭니다';
+      dupBtn.addEventListener('click', ()=>duplicateObject(obj.id));
       const delBtn=document.createElement('button'); delBtn.className='obj-del'; delBtn.textContent='물체 삭제';
       delBtn.disabled=objects.length<=1; delBtn.addEventListener('click', ()=>deleteObject(obj.id));
       const collapseBtn=document.createElement('button'); collapseBtn.type='button'; collapseBtn.className='obj-collapse-btn';
       collapseBtn.textContent=obj.cardCollapsed?'▸':'▾'; collapseBtn.title='물체 설정 접기/펼치기';
       const headRight=document.createElement('div'); headRight.style.cssText='display:flex;align-items:center;gap:6px;';
-      headRight.appendChild(collapseBtn); headRight.appendChild(delBtn);
+      headRight.appendChild(collapseBtn); headRight.appendChild(dupBtn); headRight.appendChild(delBtn);
       head.appendChild(headRight); card.appendChild(head);
       const bodyWrap=document.createElement('div'); bodyWrap.className='obj-card-body';
       if(obj.cardCollapsed) bodyWrap.style.display='none';
@@ -1177,6 +1233,14 @@
 
   // Regime (A): free flight with swept collision.
   function flyFree(obj, dt){
+    // 실에 연결된 물체는(팽팽하든 느슨하든) 바닥·벽·구조물과 아예
+    // 충돌 판정을 하지 않는다 — "이상적인 실" 문제에서는 실의 장력과
+    // 중력·가한 힘만으로 운동이 결정되고, 바닥이 우연히 궤도에 걸리는
+    // 것 같은 부차적 상호작용은 없는 것으로 다룬다. 원운동 궤도가
+    // 바닥 높이를 스칠 때마다 매번 반사되며 속도가 크게 깎여 나가는
+    // (각속도·장력 그래프가 계속 들쭉날쭉 튀던) 문제가 정확히 이래서
+    // 생겼었다.
+    if(stringsOnObject(obj.id).length>0){ obj.x+=obj.vx*dt; obj.y+=obj.vy*dt; return; }
     let remaining=dt;
     for(let iter=0; iter<8 && remaining>1e-9; iter++){
       const x0=obj.x, y0=obj.y, x1=x0+obj.vx*remaining, y1=y0+obj.vy*remaining;
@@ -1187,14 +1251,9 @@
         // Landing on a supportive surface: bounce per that surface's OWN
         // restitution (never the object's "충돌 유형"), unless the incoming
         // speed is at/below the Zeno-settling threshold, in which case it
-        // always settles into contact regardless of e — UNLESS this object
-        // is on a string. A string-connected object must never settle
-        // onto a surface (its string is the only thing meant to constrain
-        // it), so it always bounces off instead, however gently — this is
-        // what stops an orbit that happens to graze ground height from
-        // suddenly latching onto the ground and losing its string tension.
+        // always settles into contact regardless of e.
         const vn=obj.vx*hit.nx+obj.vy*hit.ny;
-        const mayStick=(-vn<=restingVnThreshold() || hit.e===0) && stringsOnObject(obj.id).length===0;
+        const mayStick=(-vn<=restingVnThreshold() || hit.e===0);
         if(mayStick){
           if(vn<0){ obj.vx-=vn*hit.nx; obj.vy-=vn*hit.ny; }
           enterContact(obj, hit);
@@ -1573,6 +1632,7 @@
   function applyRestingContactForces(){
     objects.forEach(o=>{ o.contactAx=0; o.contactAy=0; });
     applySpringForces();
+    strings.forEach(s=>{ s.tension=0; }); // 반복 시작 전 딱 한 번만 리셋 — 표시용 총 장력을 반복마다 누적하기 위함
     if(objCollisionOff && strings.length===0) return;
     // 접촉힘(물체끼리 맞닿아 서로 밀기)과 실의 장력은 둘 다 같은
     // contactAx/Ay 누산기에 힘을 더한다. 만약 이 둘을 완전히 따로(접촉힘
@@ -1625,15 +1685,26 @@
   // 완전히 동일하게 다룬다 — 이게 물체 하나가 여러 실에 동시에 걸리는
   // 사슬(고정점-A-B-C)이나 분기(고정점에 A,B가 함께 매달림)까지 자연스럽게
   // 성립하는 이유다.
+  // 실이 "팽팽하다"고 인정해 주는 기본 흔들림 폭 — 세미-임플리시트
+  // 오일러 적분 특성상 원운동·진자에서도 이 정도의 지극히 정상적인
+  // 수치 오차가 있으므로, 장력 계산과 taut 표시 판정 둘 다 반드시
+  // 이 값(의 배수)을 공유해서 서로 어긋나지 않게 한다.
+  function stringTautMargin(L){ return Math.max(0.05, L*0.025); }
   function applyStringTensionForcesOnePass(){
     strings.forEach(s=>{
-      s.tension=0;
       const A=stringEndObj(s.aType,s.aId), B=stringEndObj(s.bType,s.bId);
       const posA=stringEndPos(s.aType,s.aId), posB=stringEndPos(s.bType,s.bId);
       if(!posA || !posB) return;
       if((A&&A.dragging)||(B&&B.dragging)) return;
       const dx=posB.x-posA.x, dy=posB.y-posA.y, dist=Math.hypot(dx,dy)||1e-6;
-      if(dist<s.length-0.01) return; // 느슨함: 장력 없음
+      // 이 "느슨함" 기준은 enforceStringLengths가 taut 여부를 판정할 때
+      // 쓰는 마진과 정확히 같은 크기(stringTautMargin의 *2배)여야 한다 —
+      // 여기서만 더 빡빡하면, 실제로는 여전히 팽팽하다고 판정되는 지극히
+      // 정상적인 수치 흔들림(원운동·진자에서 반지름이 0.1~0.2% 수준
+      // 오르내리는 것)에서도 장력 계산 자체가 "느슨하다"고 오판해 장력이
+      // 갑자기 0으로 뚝 떨어지는 것처럼 보였다 — 실제로 그래프에서
+      // 관찰됐던 버그가 정확히 이것이었다.
+      if(dist<s.length-stringTautMargin(s.length)*2) return; // 느슨함: 장력 없음
       const nx=dx/dist, ny=dy/dist;
       const invMA=A?1/A.m:0, invMB=B?1/B.m:0;
       if(invMA+invMB<=0) return; // 양 끝 다 고정점이면 아무 일도 안 함
@@ -1655,7 +1726,15 @@
       const relAn=(aBx-aAx)*nx+(aBy-aAy)*ny+relVtSq/dist;
       if(relAn<=0) return; // 더 벌어지려는 게 아니면 장력 불필요
       const Tc=relAn/(invMA+invMB); // >=0, 딱 필요한 만큼의 장력(N)
-      s.tension=Tc;
+      // 이 함수는 접촉힘·장력을 함께 수렴시키는 반복 루프 안에서 여러
+      // 번 호출된다 — 매번 새로 대입(=)하면, 이미 수렴해서 이번
+      // 반복에서는 추가 장력이 필요 없는(reAn<=0으로 조기 리턴하는)
+      // 마지막 반복 직전 값만 남기 쉽고, 정확히 수렴해서 조기 리턴하는
+      // 마지막 반복에서는 아예 손도 안 대서 표시용 값이 0으로 지워지는
+      // 버그가 있었다. 실제 걸리는 "총 장력"을 보여주려면 반복마다 더한
+      // 만큼을 전부 누적해야 한다(반복 시작 전 리셋은
+      // applyRestingContactForces 쪽에서 한 번만 한다).
+      s.tension=(s.tension||0)+Tc;
       if(A){ A.contactAx=(A.contactAx||0)+Tc*invMA*nx; A.contactAy=(A.contactAy||0)+Tc*invMA*ny; }
       if(B){ B.contactAx=(B.contactAx||0)-Tc*invMB*nx; B.contactAy=(B.contactAy||0)-Tc*invMB*ny; }
     });
@@ -1684,7 +1763,17 @@
       if(!posA || !posB) return;
       const dx=posB.x-posA.x, dy=posB.y-posA.y, dist=Math.hypot(dx,dy)||1e-9;
       const L=s.length;
-      s.taut = dist>=L-0.005;
+      // "팽팽함" 판정에 약간의 여유(이력현상)를 둔다 — 실 길이는
+      // 세미-임플리시트 오일러 적분 특성상 원운동 중에도 0.1~0.2%
+      // 수준의 지극히 정상적인 미세한 흔들림이 있는데, 이 판정이 너무
+      // 빡빡하면(예: 5m 실에서 0.005m 차이) 그 정상적인 흔들림조차
+      // "느슨해짐"으로 계속 오인해서, 화면에서 실이 실선↔점선으로 매
+      // 프레임 깜빡이는 것처럼 보인다. 팽팽한 상태에서 느슨하다고
+      // 판단하려면 좀 더 확실히 줄어들어야 하고, 느슨한 상태에서
+      // 팽팽하다고 판단하려면 실제로 거의 L에 도달해야 하는 식으로
+      // 비대칭 여유를 둬서 안정적으로 유지되게 한다.
+      const margin=stringTautMargin(L);
+      s.taut = s.taut ? (dist>=L-margin*2) : (dist>=L-margin*0.5);
       if(dist<=L+1e-9) return; // 늘어나지 않았으면 보정 불필요
       const nx=dx/dist, ny=dy/dist;
       const overshoot=dist-L;
@@ -1768,7 +1857,31 @@
       const {Fx,Fy}=forceComponents(obj);
       const vMag=Math.hypot(obj.vx,obj.vy), aMag=Math.hypot(obj.ax,obj.ay);
       const Fnetx=obj.m*obj.ax, Fnety=obj.m*obj.ay, FnetMag=Math.hypot(Fnetx,Fnety);
-      const K=0.5*obj.m*vMag*vMag, Ug=obj.m*GRAVITY*obj.y, E=K+Ug;
+      const K=0.5*obj.m*vMag*vMag, Ug=obj.m*GRAVITY*obj.y;
+      // 실 하나로만 고정점에 매달려 있을 때(단진자·원운동)만 장력·각속도·
+      // 각도가 명확히 정의된다 — 사슬/분기처럼 여러 실에 걸려 있거나
+      // 물체-물체 연결이면 "이 하나의 각"으로 표현할 기준이 없으므로 0으로 둔다.
+      let T=0, omega=0, thetaP=0;
+      const anchorInfo=findSingleAnchorForObject(obj.id);
+      if(anchorInfo){
+        const sLinks=stringsOnObject(obj.id);
+        if(sLinks.length===1) T=sLinks[0].tension||0;
+        const dx=obj.x-anchorInfo.anchor.x, dy=obj.y-anchorInfo.anchor.y, r=Math.hypot(dx,dy)||1e-9;
+        const tx=-dy/r, ty=dx/r; // 접선(반시계) 단위벡터
+        const vt=obj.vx*tx+obj.vy*ty; // 부호 있는 접선속도(반시계=+)
+        omega=vt/r;
+        thetaP=pendulumAngleOf(obj);
+      }
+      // 용수철 하나에만 연결돼 있을 때 탄성력·탄성 위치에너지를 기록한다.
+      let Fspring=0, Uspring=0;
+      const spLinks=springsOnObject(obj.id);
+      if(spLinks.length===1){
+        const sp=spLinks[0];
+        Fspring=sp.currentForce||0;
+        const posA=stringEndPos(sp.aType,sp.aId), posB=stringEndPos(sp.bType,sp.bId);
+        if(posA&&posB){ const d=Math.hypot(posB.x-posA.x,posB.y-posA.y); const ext=d-sp.naturalLength; Uspring=0.5*sp.k*ext*ext; }
+      }
+      const E=K+Ug+Uspring;
       const Jx=obj.m*obj.vx-obj.p0x, Jy=obj.m*obj.vy-obj.p0y, J=Math.hypot(Jx,Jy);
       h.t.push(simTime); h.x.push(obj.x); h.y.push(bottomY(obj));
       h.vx.push(obj.vx); h.vy.push(obj.vy); h.vMag.push(vMag);
@@ -1777,8 +1890,9 @@
       h.Fnetx.push(Fnetx); h.Fnety.push(Fnety); h.FnetMag.push(FnetMag);
       h.px.push(obj.m*obj.vx); h.py.push(obj.m*obj.vy);
       h.N.push(obj.N||0); h.f.push(obj.f||0);
-      h.K.push(K); h.Ug.push(Ug); h.E.push(E);
+      h.K.push(K); h.Ug.push(Ug); h.Uspring.push(Uspring); h.E.push(E);
       h.Jx.push(Jx); h.J.push(J);
+      h.T.push(T); h.Fspring.push(Fspring); h.omega.push(omega); h.thetaP.push(thetaP);
       const cutoff=simTime-GRAPH_WINDOW-2;
       if(h.t.length>2 && h.t[0]<cutoff){ Object.keys(h).forEach(k=>{ while(h[k].length>2 && h.t[0]<cutoff) h[k].shift(); }); }
     });
@@ -1805,19 +1919,88 @@
     const state=Math.abs(dot)<0.02?'등속으로':(dot>0?'가속하며':'감속하며');
     return {arrow,dir,state,vMag};
   }
+  // 열마다 라벨과 "이 물체의 지금 값을 계산해서 문자열로" 돌려주는 함수를
+  // 하나로 묶어둔다 — 그래야 표시할 열 목록만 바꾸면 헤더도 각 행도
+  // 자동으로 따라간다. name/v/x/y는 항상 켜져 있는 "필수 정보"이고,
+  // 나머지는 전부 사용자가 "열 선택"에서 켜고 끌 수 있는 선택 정보다.
+  const INFO_COLUMNS=[
+    {key:'name', label:'물체', shortLabel:'물체', defaultOn:true},
+    {key:'m', label:'질량 m(kg)', shortLabel:'m(kg)', defaultOn:false},
+    {key:'F', label:'힘 F(N)', shortLabel:'F(N)', defaultOn:false},
+    {key:'theta', label:'힘방향 θ(°)', shortLabel:'θ(°)', defaultOn:false},
+    {key:'Fx', label:'힘x성분 Fx(N)', shortLabel:'Fx(N)', defaultOn:false},
+    {key:'Fy', label:'힘y성분 Fy(N)', shortLabel:'Fy(N)', defaultOn:false},
+    {key:'a', label:'가속도 a(m/s²)', shortLabel:'a(m/s²)', defaultOn:false},
+    {key:'v', label:'속력 v(m/s)', shortLabel:'v(m/s)', defaultOn:true},
+    {key:'vx', label:'속도x성분 vx(m/s)', shortLabel:'vx(m/s)', defaultOn:false},
+    {key:'vy', label:'속도y성분 vy(m/s)', shortLabel:'vy(m/s)', defaultOn:false},
+    {key:'x', label:'위치x x(m)', shortLabel:'x(m)', defaultOn:true},
+    {key:'y', label:'위치y y(m)', shortLabel:'y(m)', defaultOn:true},
+    {key:'T', label:'실 장력 T(N)', shortLabel:'T(N)', defaultOn:false},
+    {key:'Fspring', label:'용수철 탄성력 F용수철(N)', shortLabel:'F용수철(N)', defaultOn:false},
+    {key:'omega', label:'각속도 ω(rad/s)', shortLabel:'ω(rad/s)', defaultOn:false},
+  ];
+  // 이제 필수/선택 구분 없이 모든 열을 켜고 끌 수 있다 — 다만 물체·v·x·y는
+  // 처음엔 기본으로 켜진 채로 시작(defaultOn), 나머지는 기본으로 꺼진 채로
+  // 시작해서 필요한 것만 사용자가 골라 켜는 식이다.
+  let infoColsEnabled=new Set(INFO_COLUMNS.filter(c=>c.defaultOn).map(c=>c.key));
+  function computeInfoValues(obj){
+    const aMag=Math.hypot(obj.ax,obj.ay), vMag=Math.hypot(obj.vx,obj.vy);
+    const {Fx:activeFx,Fy:activeFy}=forceComponents(obj);
+    const activeF=Math.hypot(activeFx,activeFy);
+    let tension=0, omegaNow=0;
+    const anchorInfoR=findSingleAnchorForObject(obj.id);
+    if(anchorInfoR){
+      const sLinksR=stringsOnObject(obj.id);
+      if(sLinksR.length===1) tension=sLinksR[0].tension||0;
+      const dxR=obj.x-anchorInfoR.anchor.x, dyR=obj.y-anchorInfoR.anchor.y, rR=Math.hypot(dxR,dyR)||1e-9;
+      const txR=-dyR/rR, tyR=dxR/rR;
+      omegaNow=(obj.vx*txR+obj.vy*tyR)/rR;
+    }
+    let springForceNow=0;
+    const spLinksR=springsOnObject(obj.id);
+    if(spLinksR.length===1) springForceNow=spLinksR[0].currentForce||0;
+    return {m:obj.m.toFixed(2), F:activeF.toFixed(2), theta:String(round2(obj.theta)),
+      Fx:activeFx.toFixed(2), Fy:activeFy.toFixed(2), a:aMag.toFixed(2), v:vMag.toFixed(2),
+      vx:obj.vx.toFixed(2), vy:obj.vy.toFixed(2), x:obj.x.toFixed(2), y:bottomY(obj).toFixed(2),
+      T:tension.toFixed(2), Fspring:springForceNow.toFixed(2), omega:omegaNow.toFixed(3)};
+  }
+  function activeInfoColumns(){ return INFO_COLUMNS.filter(c=>infoColsEnabled.has(c.key)); }
+  function renderInfoTableHeader(){
+    const cols=activeInfoColumns();
+    infoTableHeadRow.innerHTML=cols.map(c=>'<th title="'+c.label+'">'+c.shortLabel+'</th>').join('');
+  }
+  function renderInfoColsPanel(){
+    infoColsPanel.innerHTML='';
+    INFO_COLUMNS.forEach(c=>{
+      const lab=document.createElement('label'); lab.style.cssText='display:inline-flex;align-items:center;gap:4px;cursor:pointer;';
+      const chk=document.createElement('input'); chk.type='checkbox'; chk.checked=infoColsEnabled.has(c.key);
+      chk.addEventListener('change', ()=>{
+        if(chk.checked) infoColsEnabled.add(c.key); else infoColsEnabled.delete(c.key);
+        renderInfoTableHeader(); refreshInfoTable();
+      });
+      lab.appendChild(chk); lab.appendChild(document.createTextNode(c.label));
+      infoColsPanel.appendChild(lab);
+    });
+  }
+  infoColsBtn.addEventListener('click', ()=>{ infoColsPanel.classList.toggle('hidden'); });
   function refreshInfoTable(){
+    // 시뮬레이션이 도는 동안 이 표는 매 프레임(초당 수십 번) 통째로
+    // 다시 그려진다 — 그 사이에 사용자가 마우스로 값을 드래그해서
+    // 선택하려 하면, DOM이 바로 다음 프레임에 교체되면서 선택이 계속
+    // 풀려버려 사실상 드래그 복사가 불가능했다. 사용자가 마우스 버튼을
+    // 누르고 있는 동안(infoTable에 mousedown 이벤트로 감지)에는 갱신을
+    // 건너뛰어서, 그 값 그대로 안정적으로 드래그 선택·복사할 수 있게 한다.
+    if(infoTableSelecting) return;
     infoTableBody.innerHTML=''; motionStatus.innerHTML='';
+    const cols=activeInfoColumns();
     objects.forEach(obj=>{
-      const aMag=Math.hypot(obj.ax,obj.ay), vMag=Math.hypot(obj.vx,obj.vy);
-      const {Fx:activeFx,Fy:activeFy}=forceComponents(obj);
-      const activeF=Math.hypot(activeFx,activeFy);
+      const vals=computeInfoValues(obj);
       const tr=document.createElement('tr');
-      tr.innerHTML='<td class="obj-name"><span class="dot" style="background:'+obj.color+'"></span>'+obj.name+'</td>'+
-        '<td>'+obj.m.toFixed(2)+'</td>'+'<td>'+activeF.toFixed(2)+'</td>'+'<td>'+round2(obj.theta)+'</td>'+
-        '<td>'+activeFx.toFixed(2)+'</td>'+'<td>'+activeFy.toFixed(2)+'</td>'+
-        '<td>'+aMag.toFixed(2)+'</td>'+'<td>'+vMag.toFixed(2)+'</td>'+
-        '<td>'+obj.vx.toFixed(2)+'</td>'+'<td>'+obj.vy.toFixed(2)+'</td>'+
-        '<td>'+obj.x.toFixed(2)+'</td>'+'<td>'+bottomY(obj).toFixed(2)+'</td>';
+      tr.innerHTML=cols.map(c=>{
+        if(c.key==='name') return '<td class="obj-name"><span class="dot" style="background:'+obj.color+'"></span>'+obj.name+'</td>';
+        return '<td>'+vals[c.key]+'</td>';
+      }).join('');
       infoTableBody.appendChild(tr);
       const md=describeMotion(obj);
       const row=document.createElement('div'); row.className='motion-row';
@@ -1825,7 +2008,7 @@
       const descSpan=document.createElement('span'); descSpan.className='desc';
       descSpan.innerHTML='<span class="dot" style="background:'+obj.color+'"></span>'+obj.name+': '+(md.dir==='정지'?'정지 상태':md.dir+'으로 '+md.state+' 이동 중');
       const valsSpan=document.createElement('span'); valsSpan.className='vals';
-      valsSpan.textContent='F='+activeF.toFixed(1)+'N  m='+obj.m.toFixed(1)+'kg  a='+aMag.toFixed(2)+'m/s2  v='+vMag.toFixed(2)+'m/s';
+      valsSpan.textContent='F='+vals.F+'N  m='+obj.m.toFixed(1)+'kg  a='+vals.a+'m/s2  v='+vals.v+'m/s';
       row.appendChild(arrowSpan); row.appendChild(descSpan); row.appendChild(valsSpan);
       motionStatus.appendChild(row);
     });
@@ -2271,6 +2454,22 @@
   function snapToInteger(x){ return Math.round(x); }
 
   function promptCoords(target){
+    if(target.type==='string'){
+      const s=target.ref;
+      const ls=window.prompt('실 길이(m)를 입력하세요', s.length.toFixed(2)); if(ls===null) return;
+      const nl=parseFloat(ls); if(isNaN(nl)||nl<=0){ alert('실 길이는 0보다 큰 숫자여야 합니다.'); return; }
+      s.length=nl;
+      return;
+    }
+    if(target.type==='spring'){
+      const s=target.ref;
+      const ls=window.prompt('용수철 자연길이(m)를 입력하세요', s.naturalLength.toFixed(2)); if(ls===null) return;
+      const nl=parseFloat(ls); if(isNaN(nl)||nl<=0){ alert('자연길이는 0보다 큰 숫자여야 합니다.'); return; }
+      const ks=window.prompt('탄성계수 k(N/m)를 입력하세요', String(s.k)); if(ks===null) return;
+      const nk=parseFloat(ks); if(isNaN(nk)||nk<=0){ alert('탄성계수는 0보다 큰 숫자여야 합니다.'); return; }
+      s.naturalLength=nl; s.k=nk;
+      return;
+    }
     if(target.type==='obj'){
       const o=target.ref;
       const xs=window.prompt('x 좌표(m)를 입력하세요', o.x.toFixed(2)); if(xs===null) return;
@@ -2362,13 +2561,21 @@
       // — 그래야 "벽이나 바닥에 용수철을 설치"하는 게 실제로 그 좌표에
       // 고정된 한 점으로 동작한다.
       function closestPointOnStructure(s,x,y){
-        if(s.type==='hline'){ const cx=Math.max(s.x,Math.min(s.x+s.length,x)); return {x:cx,y:s.y}; }
-        if(s.type==='vline'){ const cy=Math.max(s.yBottom,Math.min(s.yBottom+s.length,y)); return {x:s.x,y:cy}; }
+        // 벽/바닥/발판에 붙는 지점은 클릭한 좌표 그대로가 아니라 0.5m
+        // 단위(0, 0.5, 1, 1.5, ...)로 스냅한다 — 그래야 미세하게
+        // 삐뚤어진 각도로 클릭해도 늘 깔끔한 위치에 붙고, 정수 한 칸
+        // 단위보다 두 배 촘촘하게 위치를 고를 수 있다.
+        const snapMid=v=>Math.round(v*2)/2;
+        if(s.type==='hline'){ const cx=snapMid(Math.max(s.x,Math.min(s.x+s.length,x))); return {x:cx,y:s.y}; }
+        if(s.type==='vline'){ const cy=snapMid(Math.max(s.yBottom,Math.min(s.yBottom+s.length,y))); return {x:s.x,y:cy}; }
         if(s.type==='ramp'){
           const x1=s.x1,y1=s.yBase,x2=s.x2,y2=s.yBase+s.height;
           const dx=x2-x1,dy=y2-y1,lenSq=dx*dx+dy*dy||1e-9;
           let t=((x-x1)*dx+(y-y1)*dy)/lenSq; t=Math.max(0,Math.min(1,t));
-          return {x:x1+t*dx,y:y1+t*dy};
+          const rawX=x1+t*dx;
+          const snappedX=snapMid(rawX);
+          const t2=dx!==0?Math.max(0,Math.min(1,(snappedX-x1)/dx)):t;
+          return {x:x1+t2*dx, y:y1+t2*dy};
         }
         return null;
       }
@@ -2386,7 +2593,7 @@
           if(s.type==='hline'||s.type==='vline'||s.type==='ramp'){
             if(hitTestStructure(s,x,y,0.4)){
               const p=closestPointOnStructure(s,x,y);
-              const a=addAnchor(p.x,p.y,false); a.showTension=true;
+              const a=addAnchor(p.x,p.y,false); a.showTension=true; a.wallSpringAnchor=true;
               return {type:'anchor',id:a.id};
             }
           }
@@ -2452,6 +2659,26 @@
         return;
       }
     }
+    for(let i=strings.length-1;i>=0;i--){
+      const s=strings[i];
+      const posA=stringEndPos(s.aType,s.aId), posB=stringEndPos(s.bType,s.bId);
+      if(!posA||!posB) continue;
+      if(pointToSegmentDist(w.x,w.y,posA.x,posA.y,posB.x,posB.y)<0.35){
+        pendingTarget={type:'string',ref:s}; pendingStartScreen={x:evt.clientX,y:evt.clientY};
+        longPressTimer=setTimeout(()=>{ promptCoords(pendingTarget); pendingTarget=null; longPressTimer=null; },550);
+        return;
+      }
+    }
+    for(let i=springs.length-1;i>=0;i--){
+      const s=springs[i];
+      const posA=stringEndPos(s.aType,s.aId), posB=stringEndPos(s.bType,s.bId);
+      if(!posA||!posB) continue;
+      if(pointToSegmentDist(w.x,w.y,posA.x,posA.y,posB.x,posB.y)<0.35){
+        pendingTarget={type:'spring',ref:s}; pendingStartScreen={x:evt.clientX,y:evt.clientY};
+        longPressTimer=setTimeout(()=>{ promptCoords(pendingTarget); pendingTarget=null; longPressTimer=null; },550);
+        return;
+      }
+    }
   });
   simCanvas.addEventListener('pointermove', evt=>{
     if(editLocked) return;
@@ -2493,7 +2720,15 @@
         draggingStruct.x2=newX2; draggingStruct.x1=draggingStruct.flip?(newX2+baseLen):(newX2-baseLen); draggingStruct.yBase=newYBase;
       } else if(draggingStruct.type==='hline'){ draggingStruct.x=snapToInteger(w.x-structDragOffsetX); draggingStruct.y=Math.max(0,snapToInteger(w.y-structDragOffsetY)); }
       else if(draggingStruct.type==='anchor'){
-        draggingStruct.x=snapToInteger(w.x-structDragOffsetX); draggingStruct.y=Math.max(0,snapToInteger(w.y-structDragOffsetY));
+        // 용수철이 벽/바닥/발판에 붙을 때 자동으로 만들어진 고정점은
+        // 나중에 드래그로 옮기더라도 똑같이 0.5m 단위로 스냅한다 —
+        // 일반 고정점(정수 1칸 단위)보다 두 배 촘촘한 규칙이다.
+        if(draggingStruct.wallSpringAnchor){
+          const snapMidD=v=>Math.round(v*2)/2;
+          draggingStruct.x=snapMidD(w.x-structDragOffsetX); draggingStruct.y=Math.max(0,snapMidD(w.y-structDragOffsetY));
+        } else {
+          draggingStruct.x=snapToInteger(w.x-structDragOffsetX); draggingStruct.y=Math.max(0,snapToInteger(w.y-structDragOffsetY));
+        }
         enforceStringLengths(); // 고정점을 옮기면 거기 연결된 물체도 끌려온다
       }
       else { draggingStruct.x=snapToInteger(w.x-structDragOffsetX); draggingStruct.yBottom=Math.max(0,snapToInteger(w.y-structDragOffsetY)); }
@@ -2812,7 +3047,7 @@
       structures: structures.map(function(s){
         if(s.type==='ramp') return {type:'ramp', x2:s.x2, yBase:s.yBase, height:s.height, angleDeg:s.angleDeg, flip:s.flip, collisionType:s.collisionType, restitutionOwn:s.restitutionOwn};
         if(s.type==='hline') return {type:'hline', x:s.x, y:s.y, length:s.length, collisionType:s.collisionType, restitutionOwn:s.restitutionOwn};
-        if(s.type==='anchor') return {type:'anchor', x:s.x, y:s.y, showTension:s.showTension!==false};
+        if(s.type==='anchor') return {type:'anchor', x:s.x, y:s.y, showTension:s.showTension!==false, wallSpringAnchor:!!s.wallSpringAnchor};
         return {type:'vline', x:s.x, yBottom:s.yBottom, length:s.length, collisionType:s.collisionType, restitutionOwn:s.restitutionOwn};
       }),
       frictionZones: frictionZones.map(function(z){ return {kind:z.kind, structureIndex: z.kind==='structure'?structures.findIndex(function(s){return s.id===z.structureId;}):null, x1:z.x1, x2:z.x2, mu:z.mu}; }),
@@ -2864,7 +3099,7 @@
       if(s.type==='ramp') addRamp(s.x2,s.yBase,s.height,s.angleDeg,s.flip,false,s.collisionType,s.restitutionOwn);
       else if(s.type==='hline') addHLine(s.x,s.y,s.length,false,s.collisionType,s.restitutionOwn);
       else if(s.type==='vline') addVLine(s.x,s.yBottom,s.length,false,s.collisionType,s.restitutionOwn);
-      else if(s.type==='anchor'){ const a=addAnchor(s.x,s.y,false); a.showTension=(s.showTension!==false); }
+      else if(s.type==='anchor'){ const a=addAnchor(s.x,s.y,false); a.showTension=(s.showTension!==false); a.wallSpringAnchor=!!s.wallSpringAnchor; }
     });
     (state.frictionZones||[]).forEach(function(z){
       const structureId=(z.kind==='structure'&&z.structureIndex>=0&&structures[z.structureIndex])?structures[z.structureIndex].id:null;
@@ -2923,6 +3158,8 @@
   buildDefaultGraphs();
   renderObjectPanels();
   renderAllLegends();
+  renderInfoTableHeader();
+  renderInfoColsPanel();
   refreshInfoTable();
   updateLockUI();
   requestAnimationFrame(tick);
